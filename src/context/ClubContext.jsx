@@ -26,20 +26,14 @@ export function ClubProvider({ children }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [pendingAdminAction, setPendingAdminAction] = useState(null);
 
-  // Initialize members: 29 members with custom avatar support
+  // Initialize members: load all saved members from localStorage without resetting
   const [members, setMembers] = useState(() => {
     try {
       const saved = localStorage.getItem('fpc_members');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === INITIAL_MEMBERS.length) {
-          return parsed.map(p => {
-            const seed = INITIAL_MEMBERS.find(im => im.id === p.id);
-            if (seed && seed.avatar?.startsWith('data:image') && (!p.avatar || !p.avatar.startsWith('data:image'))) {
-              return { ...p, avatar: seed.avatar, dupr: seed.dupr || p.dupr, paddle: seed.paddle || p.paddle };
-            }
-            return p;
-          });
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
         }
       }
       return INITIAL_MEMBERS;
