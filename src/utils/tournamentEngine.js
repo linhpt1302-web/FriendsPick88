@@ -1,7 +1,7 @@
 /**
  * Tournament Engine for Friends Pickleball Club
- * Supports Flexible 1-30 Teams, 1-10 Divisions (Bảng A ➔ Bảng J), Manual Division Arranging,
- * and Odd Group Best 3rd-Placed Wildcard Seeding to Quarterfinals.
+ * Supports Flexible 1-30 Teams, 1-10 Divisions (Bảng A ➔ Bảng J), Balanced Division Arranging,
+ * Round-Robin Group Fixture Generation, and Knockout Quarterfinals with Best 3rd-Placed Wildcards.
  */
 
 export const DIVISION_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
@@ -11,21 +11,23 @@ export const DIVISION_NAMES = [
 ];
 
 /**
- * Creates a flexible championship tournament
+ * Creates a flexible championship tournament with guaranteed round-robin match fixtures
  * @param {Object} config - { name, date, surface, prizeTrophy, description, teams, numGroups, manualGroups }
  */
 export function createChampionshipTournament({
   name,
   date,
   surface = 'Sân Trung tâm 1 & 2',
-  prizeTrophy = 'Cúp Vàng & Vợt Selkirk Pro 🏆',
+  prizeTrophy = 'Cúp Vàng & Cặp Vợt Selkirk Pro 🏆',
   description = 'Giải đấu đôi chính thức CLB Friends',
   teams = [],
   numGroups = 4,
   manualGroups = null
 }) {
   const totalTeams = teams.length;
-  const groupsCount = Math.max(1, Math.min(10, Number(numGroups)));
+  // Determine effective group count (each group should ideally have at least 2 teams)
+  const maxPossibleGroups = Math.max(1, Math.floor(totalTeams / 2));
+  const groupsCount = Math.max(1, Math.min(10, Math.min(Number(numGroups), maxPossibleGroups || 1)));
 
   // Initialize groups
   const groups = [];
@@ -47,37 +49,79 @@ export function createChampionshipTournament({
       }
     });
   } else {
-    let hasExplicitGroups = teams.some(t => t.groupCode);
+    // Check if teams already have valid group codes within our groupsCount range
+    const validGroupCodes = groups.map(g => g.code);
+    const hasExplicitGroups = teams.some(t => t.groupCode && validGroupCodes.includes(t.groupCode));
+
     if (hasExplicitGroups) {
-      teams.forEach(team => {
-        const targetGroup = groups.find(g => g.code === team.groupCode) || groups[0];
-        targetGroup.teams.push(team);
+      teams.forEach((team, idx) => {
+        let targetGroup = groups.find(g => g.code === team.groupCode);
+        if (!targetGroup) {
+          targetGroup = groups[idx % groupsCount];
+        }
+        targetGroup.teams.push({
+          ...team,
+          groupCode: targetGroup.code
+        });
       });
     } else {
+      // Balanced snake draft allocation by average Elo
       const sortedTeams = [...teams].sort((a, b) => (b.avgElo || 0) - (a.avgElo || 0));
       sortedTeams.forEach((team, idx) => {
         const cycle = Math.floor(idx / groupsCount);
         const rem = idx % groupsCount;
         const targetGroupIndex = cycle % 2 === 0 ? rem : groupsCount - 1 - rem;
-        groups[targetGroupIndex % groupsCount].teams.push(team);
+        const assignedGroup = groups[targetGroupIndex % groupsCount];
+        assignedGroup.teams.push({
+          ...team,
+          groupCode: assignedGroup.code
+        });
       });
     }
   }
 
+  // Re-balance: if any group has 0 or 1 team while others have > 2, redistribute evenly
+  const flatTeams = groups.flatMap(g => g.teams);
+  const minTeamsPerGroup = Math.min(...groups.map(g => g.teams.length));
+  if (minTeamsPerGroup < 2 && flatTeams.length >= groupsCount * 2) {
+    groups.forEach(g => { g.teams = []; });
+    flatTeams.forEach((team, idx) => {
+      const assignedGroup = groups[idx % groupsCount];
+      assignedGroup.teams.push({ ...team, groupCode: assignedGroup.code });
+    });
+  }
+
   // Generate round-robin match fixtures for each group
   let matchIdCounter = 1;
-  groups.forEach(group => {
+  const timestamp = Date.now();
+
+  groups.forEach((group) => {
     const grpTeams = group.teams;
+    let roundNum = 1;
+
     for (let i = 0; i < grpTeams.length; i++) {
       for (let j = i + 1; j < grpTeams.length; j++) {
+        const tA = grpTeams[i];
+        const tB = grpTeams[j];
+
         group.matches.push({
-          id: `gm-${group.code.toLowerCase()}-${matchIdCounter++}`,
+          id: `gm-${group.code.toLowerCase()}-${timestamp}-${matchIdCounter++}`,
           groupId: group.id,
           groupName: group.name,
           stage: 'group',
-          roundName: `${group.name} - Lượt trận`,
-          teamA: grpTeams[i],
-          teamB: grpTeams[j],
+          roundName: `${group.name} - Trận ${roundNum++}`,
+          teamA: {
+            id: tA.id,
+            name: tA.name,
+            playerIds: tA.playerIds || [tA.player1Id, tA.player2Id].filter(Boolean),
+            avgElo: tA.avgElo || 1200
+          },
+          teamB: {
+            id: tB.id,
+            name: tB.name,
+            playerIds: tB.playerIds || [tB.player1Id, tB.player2Id].filter(Boolean),
+            avgElo: tB.avgElo || 1200
+          },
           scoreA: null,
           scoreB: null,
           winnerId: null,
@@ -110,7 +154,7 @@ export function createChampionshipTournament({
       // 3 Groups (Odd): Top 2 from A, B, C (6 teams) + 2 Best 3rd-placed teams
       qfMatches = [
         {
-          id: 'qf-1',
+          id: `qf-1-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 1 (Nhất A vs Hạng 3 Tốt Nhất 2)',
@@ -125,7 +169,7 @@ export function createChampionshipTournament({
           status: 'pending'
         },
         {
-          id: 'qf-2',
+          id: `qf-2-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 2 (Nhất B vs Nhì C)',
@@ -140,7 +184,7 @@ export function createChampionshipTournament({
           status: 'pending'
         },
         {
-          id: 'qf-3',
+          id: `qf-3-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 3 (Nhất C vs Hạng 3 Tốt Nhất 1)',
@@ -155,7 +199,7 @@ export function createChampionshipTournament({
           status: 'pending'
         },
         {
-          id: 'qf-4',
+          id: `qf-4-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 4 (Nhì A vs Nhì B)',
@@ -173,7 +217,7 @@ export function createChampionshipTournament({
     } else {
       qfMatches = [
         {
-          id: 'qf-1',
+          id: `qf-1-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 1 (Nhất A vs Nhì B)',
@@ -188,7 +232,7 @@ export function createChampionshipTournament({
           status: 'pending'
         },
         {
-          id: 'qf-2',
+          id: `qf-2-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 2 (Nhất C vs Nhì D)',
@@ -203,7 +247,7 @@ export function createChampionshipTournament({
           status: 'pending'
         },
         {
-          id: 'qf-3',
+          id: `qf-3-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 3 (Nhất B vs Nhì A)',
@@ -218,7 +262,7 @@ export function createChampionshipTournament({
           status: 'pending'
         },
         {
-          id: 'qf-4',
+          id: `qf-4-${timestamp}`,
           round: 1,
           stage: 'quarterfinal',
           roundName: 'Tứ kết 4 (Nhất D vs Nhì C)',
@@ -243,9 +287,10 @@ export function createChampionshipTournament({
   }
 
   // Semifinals (2 matches)
+  const qfIds = rounds[0]?.matches?.map(m => m.id) || [];
   const semifinalMatches = [
     {
-      id: 'sf-1',
+      id: `sf-1-${timestamp}`,
       round: rounds.length + 1,
       stage: 'semifinal',
       roundName: 'Bán kết 1 (Thắng TK1 vs Thắng TK2)',
@@ -258,10 +303,10 @@ export function createChampionshipTournament({
       winnerId: null,
       isFinal: false,
       status: 'pending',
-      feederMatchIds: advancingTeamsCount >= 8 ? ['qf-1', 'qf-2'] : null
+      feederMatchIds: qfIds.length >= 2 ? [qfIds[0], qfIds[1]] : null
     },
     {
-      id: 'sf-2',
+      id: `sf-2-${timestamp}`,
       round: rounds.length + 1,
       stage: 'semifinal',
       roundName: 'Bán kết 2 (Thắng TK3 vs Thắng TK4)',
@@ -274,7 +319,7 @@ export function createChampionshipTournament({
       winnerId: null,
       isFinal: false,
       status: 'pending',
-      feederMatchIds: advancingTeamsCount >= 8 ? ['qf-3', 'qf-4'] : null
+      feederMatchIds: qfIds.length >= 4 ? [qfIds[2], qfIds[3]] : null
     }
   ];
 
@@ -287,7 +332,7 @@ export function createChampionshipTournament({
   // Grand Final (1 match - Best of 3 sets to 11 pts)
   const finalMatches = [
     {
-      id: 'final-1',
+      id: `final-1-${timestamp}`,
       round: rounds.length + 1,
       stage: 'final',
       roundName: 'Chung Kết Vô Địch (Thắng 2/3 set)',
@@ -299,7 +344,7 @@ export function createChampionshipTournament({
       winnerId: null,
       isFinal: true,
       status: 'pending',
-      feederMatchIds: ['sf-1', 'sf-2']
+      feederMatchIds: [`sf-1-${timestamp}`, `sf-2-${timestamp}`]
     }
   ];
 
@@ -315,8 +360,8 @@ export function createChampionshipTournament({
   };
 
   return {
-    id: `tourney-${Date.now()}`,
-    name,
+    id: `tourney-${timestamp}`,
+    name: name || `Giải Đôi CLB Friends ${new Date().getFullYear()}`,
     date: date || 'Tháng 8, 2026',
     surface,
     prizeTrophy,
@@ -339,7 +384,7 @@ export function calculateGroupStandings(teams = [], matches = []) {
     teamId: team.id,
     teamName: team.name,
     playerIds: team.playerIds,
-    avgElo: team.avgElo || 1400,
+    avgElo: team.avgElo || 1200,
     played: 0,
     won: 0,
     lost: 0,
@@ -351,8 +396,8 @@ export function calculateGroupStandings(teams = [], matches = []) {
 
   matches.forEach(m => {
     if (m.status === 'completed' && m.scoreA !== null && m.scoreB !== null) {
-      const standA = standings.find(s => s.teamId === m.teamA.id);
-      const standB = standings.find(s => s.teamId === m.teamB.id);
+      const standA = standings.find(s => s.teamId === m.teamA?.id);
+      const standB = standings.find(s => s.teamId === m.teamB?.id);
 
       if (standA && standB) {
         standA.played += 1;
@@ -410,7 +455,6 @@ export function getBestThirdPlacedTeams(groups = [], countNeeded = 2) {
     }
   });
 
-  // Sort across groups: Wins -> Diff -> Points For -> avgElo
   thirdPlacedTeams.sort((a, b) => {
     if (b.won !== a.won) return b.won - a.won;
     if (b.pointsDiff !== a.pointsDiff) return b.pointsDiff - a.pointsDiff;
@@ -423,7 +467,6 @@ export function getBestThirdPlacedTeams(groups = [], countNeeded = 2) {
 
 /**
  * Automatically syncs qualified group teams into the Quarterfinals/Semifinals bracket
- * Supports both even group counts and odd group counts (with best 3rd-placed wildcard qualification)
  */
 export function syncGroupWinnersToQuarterfinals(tournament) {
   if (!tournament.groups || !tournament.bracket) return tournament;
@@ -440,35 +483,28 @@ export function syncGroupWinnersToQuarterfinals(tournament) {
   });
 
   if (firstRoundMatches.length === 4) {
-    // 4 Quarterfinal matches
     const grpA = groupStandingsMap['A']?.standings;
     const grpB = groupStandingsMap['B']?.standings;
     const grpC = groupStandingsMap['C']?.standings;
     const grpD = groupStandingsMap['D']?.standings;
 
     if (groups.length === 3) {
-      // 3 Groups (Odd): Top 2 from A, B, C (6 teams) + 2 Best 3rd-placed teams
       const bestThirds = getBestThirdPlacedTeams(groups, 2);
       const bestThird1 = bestThirds[0]?.teamObj;
       const bestThird2 = bestThirds[1]?.teamObj;
 
-      // QF1: 1st A vs Best 3rd-placed 2
       if (grpA && grpA[0]) firstRoundMatches[0].teamA = groups.find(g => g.code === 'A')?.teams.find(t => t.id === grpA[0].teamId);
       if (bestThird2) firstRoundMatches[0].teamB = bestThird2;
 
-      // QF2: 1st B vs 2nd C
       if (grpB && grpB[0]) firstRoundMatches[1].teamA = groups.find(g => g.code === 'B')?.teams.find(t => t.id === grpB[0].teamId);
       if (grpC && grpC[1]) firstRoundMatches[1].teamB = groups.find(g => g.code === 'C')?.teams.find(t => t.id === grpC[1].teamId);
 
-      // QF3: 1st C vs Best 3rd-placed 1
       if (grpC && grpC[0]) firstRoundMatches[2].teamA = groups.find(g => g.code === 'C')?.teams.find(t => t.id === grpC[0].teamId);
       if (bestThird1) firstRoundMatches[2].teamB = bestThird1;
 
-      // QF4: 2nd A vs 2nd B
       if (grpA && grpA[1]) firstRoundMatches[3].teamA = groups.find(g => g.code === 'A')?.teams.find(t => t.id === grpA[1].teamId);
       if (grpB && grpB[1]) firstRoundMatches[3].teamB = groups.find(g => g.code === 'B')?.teams.find(t => t.id === grpB[1].teamId);
     } else if (groups.length >= 4) {
-      // 4 or more groups
       if (grpA && grpA[0]) firstRoundMatches[0].teamA = groups.find(g => g.code === 'A')?.teams.find(t => t.id === grpA[0].teamId);
       if (grpB && grpB[1]) firstRoundMatches[0].teamB = groups.find(g => g.code === 'B')?.teams.find(t => t.id === grpB[1].teamId);
 
@@ -494,7 +530,6 @@ export function syncGroupWinnersToQuarterfinals(tournament) {
       if (grpA && grpA[2]) firstRoundMatches[3].teamB = groups.find(g => g.code === 'A')?.teams.find(t => t.id === grpA[2].teamId);
     }
   } else if (firstRoundMatches.length === 2) {
-    // 2 Semifinal matches
     const grpA = groupStandingsMap['A']?.standings;
     const grpB = groupStandingsMap['B']?.standings;
 
@@ -505,7 +540,6 @@ export function syncGroupWinnersToQuarterfinals(tournament) {
     if (grpA && grpA[1]) firstRoundMatches[1].teamB = groups.find(g => g.code === 'A')?.teams.find(t => t.id === grpA[1].teamId);
   }
 
-  // Update status of matches to 'scheduled' if both teams are resolved
   firstRoundMatches.forEach(m => {
     if (m.teamA && m.teamB && m.status === 'pending') {
       m.status = 'scheduled';

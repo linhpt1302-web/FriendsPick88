@@ -41,6 +41,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
     ];
 
     const initialTeams = [];
+    const validDivs = Math.max(1, Math.min(10, numDivisions));
 
     for (let i = 0; i < numTeams; i++) {
       const p1Index = (i * 2) % availableMembers.length;
@@ -48,7 +49,8 @@ export function CreateTournamentModal({ isOpen, onClose }) {
       const p1 = availableMembers[p1Index] || availableMembers[0];
       const p2 = availableMembers[p2Index] || availableMembers[1];
 
-      const assignedGroupCode = DIVISION_LETTERS[i % Math.min(numDivisions, 10)];
+      // Evenly distribute teams into divisions (0 ➔ A, 1 ➔ B, 2 ➔ C, 3 ➔ D, 4 ➔ A, 5 ➔ B, ...)
+      const assignedGroupCode = DIVISION_LETTERS[i % validDivs];
       const avgElo = Math.round(((p1.elo || 1150) + (p2.elo || 1150)) / 2);
 
       initialTeams.push({
@@ -135,6 +137,9 @@ export function CreateTournamentModal({ isOpen, onClose }) {
     setNumTeams(prev => prev - 1);
   };
 
+  /**
+   * Balanced snake draft allocation by Elo
+   */
   const handleAutoSeedByElo = () => {
     const sortedMembers = [...members].sort((a, b) => b.elo - a.elo);
     const newTeams = [];
@@ -165,13 +170,15 @@ export function CreateTournamentModal({ isOpen, onClose }) {
     setTeamsList(newTeams);
   };
 
+  /**
+   * Balanced random distribution (shuffling and dealing evenly into divisions)
+   */
   const handleRandomizeDivisions = () => {
-    setTeamsList(prev => {
-      return prev.map(t => ({
-        ...t,
-        groupCode: DIVISION_LETTERS[Math.floor(Math.random() * numDivisions)]
-      }));
+    const shuffled = [...teamsList].sort(() => Math.random() - 0.5);
+    shuffled.forEach((team, idx) => {
+      team.groupCode = DIVISION_LETTERS[idx % numDivisions];
     });
+    setTeamsList(shuffled);
   };
 
   const divisionPreviewMap = useMemo(() => {
@@ -194,6 +201,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
         return;
       }
 
+      // Format team objects
       const formattedTeams = teamsList.map(t => ({
         id: t.id,
         name: t.name,
@@ -214,7 +222,8 @@ export function CreateTournamentModal({ isOpen, onClose }) {
 
       if (created) {
         setActiveTournamentId(created.id);
-        alert(`Đã khởi tạo thành công giải đấu "${created.name}" với ${formattedTeams.length} đôi và ${numDivisions} bảng đấu!`);
+        const totalMatchesCount = created.groups?.reduce((acc, g) => acc + (g.matches?.length || 0), 0) || 0;
+        alert(`Đã khởi tạo thành công giải đấu "${created.name}"!\n\n✓ ${formattedTeams.length} Đội Đôi\n✓ ${created.numGroups} Bảng Đấu\n✓ ${totalMatchesCount} Trận đấu Vòng Bảng đã được tạo sẵn!`);
       }
 
       onClose();
@@ -371,7 +380,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Users size={18} style={{ color: 'var(--neon-lime)' }} />
               <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                2. Ghép Đội & Xếp Bảng Đấu Thủ Công ({teamsList.length} Đội)
+                2. Ghép Đội & Xếp Bảng Đấu ({teamsList.length} Đôi)
               </h4>
             </div>
 
@@ -383,7 +392,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
                 className="btn btn-secondary btn-sm"
               >
                 <Sparkles size={14} />
-                <span>Xếp Hạt Giống Elo</span>
+                <span>Xếp Hạt Giống Elo Đều Bảng</span>
               </button>
 
               <button
@@ -392,7 +401,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
                 className="btn btn-secondary btn-sm"
               >
                 <Shuffle size={14} />
-                <span>Xếp Bảng Ngẫu Nhiên</span>
+                <span>Chia Đều Ngẫu Nhiên</span>
               </button>
 
               <button
@@ -540,6 +549,9 @@ export function CreateTournamentModal({ isOpen, onClose }) {
             {Array.from({ length: numDivisions }).map((_, gIdx) => {
               const code = DIVISION_LETTERS[gIdx];
               const groupTeams = divisionPreviewMap[code] || [];
+              const groupMatchesCount = groupTeams.length >= 2 
+                ? (groupTeams.length * (groupTeams.length - 1)) / 2 
+                : 0;
 
               return (
                 <div
@@ -548,15 +560,15 @@ export function CreateTournamentModal({ isOpen, onClose }) {
                     padding: '0.75rem',
                     background: 'rgba(15, 23, 42, 0.8)',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)'
+                    border: groupTeams.length >= 2 ? '1px solid var(--border-subtle)' : '1px dashed rgba(245, 158, 11, 0.4)'
                   }}
                 >
                   <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
                     <strong style={{ color: 'var(--neon-lime)', fontSize: '0.9rem' }}>
                       {DIVISION_NAMES[gIdx]}
                     </strong>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      {groupTeams.length} Đội
+                    <span style={{ fontSize: '0.72rem', color: groupTeams.length >= 2 ? 'var(--neon-cyan)' : '#fbbf24', fontWeight: '600' }}>
+                      {groupTeams.length} Đội ({groupMatchesCount} trận)
                     </span>
                   </div>
 

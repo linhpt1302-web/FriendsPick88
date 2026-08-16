@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
 import { calculateGroupStandings, getBestThirdPlacedTeams } from '../../utils/tournamentEngine';
 import { Modal } from '../common/Modal';
-import { CheckCircle2, Play, Trophy, Sparkles, Swords, ArrowRight, Award } from 'lucide-react';
+import { CheckCircle2, Play, Trophy, Sparkles, Swords, ArrowRight, Award, Plus, PlusCircle, Trash2 } from 'lucide-react';
 
 export function GroupStageView({ tournament, onNavigateToKnockout }) {
-  const { updateTournamentMatchScore, requireAdmin } = useClub();
+  const { updateTournamentMatchScore, requireAdmin, tournaments, setTournaments } = useClub();
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [scoreA, setScoreA] = useState(15);
   const [scoreB, setScoreB] = useState(11);
+
+  // Manual Add Match modal state
+  const [manualAddGroup, setManualAddGroup] = useState(null);
+  const [manualTeamAId, setManualTeamAId] = useState('');
+  const [manualTeamBId, setManualTeamBId] = useState('');
 
   if (!tournament.groups || tournament.groups.length === 0) {
     return (
@@ -22,8 +27,8 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
   const bestThirds = isOddGroups ? getBestThirdPlacedTeams(tournament.groups, 2) : [];
 
   // Check if all group stage matches across all groups are completed
-  const totalGroupMatches = tournament.groups.reduce((acc, g) => acc + g.matches.length, 0);
-  const completedGroupMatches = tournament.groups.reduce((acc, g) => acc + g.matches.filter(m => m.status === 'completed').length, 0);
+  const totalGroupMatches = tournament.groups.reduce((acc, g) => acc + (g.matches?.length || 0), 0);
+  const completedGroupMatches = tournament.groups.reduce((acc, g) => acc + (g.matches?.filter(m => m.status === 'completed').length || 0), 0);
   const isAllGroupsCompleted = totalGroupMatches > 0 && totalGroupMatches === completedGroupMatches;
 
   const handleOpenScore = (match) => {
@@ -57,6 +62,86 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
 
     updateTournamentMatchScore(tournament.id, selectedMatch.id, sA, sB);
     setSelectedMatch(null);
+  };
+
+  /**
+   * Admin: Add a manual match fixture inside a group
+   */
+  const handleOpenAddManualMatch = (group) => {
+    requireAdmin(() => {
+      setManualAddGroup(group);
+      if (group.teams && group.teams.length >= 2) {
+        setManualTeamAId(group.teams[0].id);
+        setManualTeamBId(group.teams[1].id);
+      } else if (group.teams && group.teams.length === 1) {
+        setManualTeamAId(group.teams[0].id);
+        setManualTeamBId('');
+      }
+    });
+  };
+
+  const handleSaveManualMatch = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!manualAddGroup) return;
+
+    if (!manualTeamAId || !manualTeamBId) {
+      alert('Vui lòng chọn 2 đội khác nhau để tạo trận đấu.');
+      return;
+    }
+
+    if (manualTeamAId === manualTeamBId) {
+      alert('Một đội không thể thi đấu với chính mình.');
+      return;
+    }
+
+    const tA = manualAddGroup.teams.find(t => t.id === manualTeamAId);
+    const tB = manualAddGroup.teams.find(t => t.id === manualTeamBId);
+
+    if (!tA || !tB) {
+      alert('Không tìm thấy thông tin đội trong bảng này.');
+      return;
+    }
+
+    const newMatch = {
+      id: `gm-${manualAddGroup.code.toLowerCase()}-${Date.now()}`,
+      groupId: manualAddGroup.id,
+      groupName: manualAddGroup.name,
+      stage: 'group',
+      roundName: `${manualAddGroup.name} - Trận đấu thêm`,
+      teamA: {
+        id: tA.id,
+        name: tA.name,
+        playerIds: tA.playerIds || [tA.player1Id, tA.player2Id].filter(Boolean),
+        avgElo: tA.avgElo || 1200
+      },
+      teamB: {
+        id: tB.id,
+        name: tB.name,
+        playerIds: tB.playerIds || [tB.player1Id, tB.player2Id].filter(Boolean),
+        avgElo: tB.avgElo || 1200
+      },
+      scoreA: null,
+      scoreB: null,
+      winnerId: null,
+      isFinal: false,
+      status: 'scheduled'
+    };
+
+    setTournaments(prev => {
+      return prev.map(t => {
+        if (t.id !== tournament.id) return t;
+        const updated = JSON.parse(JSON.stringify(t));
+        const grp = updated.groups.find(g => g.id === manualAddGroup.id);
+        if (grp) {
+          grp.matches = grp.matches || [];
+          grp.matches.push(newMatch);
+        }
+        return updated;
+      });
+    });
+
+    setManualAddGroup(null);
+    alert(`Đã thêm thành công trận đấu: ${tA.name} vs ${tB.name}!`);
   };
 
   return (
@@ -239,12 +324,13 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
       {/* Grid of Groups */}
       <div className="grid-2" style={{ gap: '2rem' }}>
         {tournament.groups.map(group => {
-          const standings = calculateGroupStandings(group.teams, group.matches);
+          const standings = calculateGroupStandings(group.teams, group.matches || []);
+          const groupMatches = group.matches || [];
 
           return (
             <div key={group.id} className="glass-card" style={{ padding: '1.25rem' }}>
               {/* Group Header */}
-              <div className="flex-between" style={{ marginBottom: '1rem' }}>
+              <div className="flex-between" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--neon-lime)' }}>
                     {group.name}
@@ -263,9 +349,22 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                   </span>
                 </div>
 
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {group.matches.filter(m => m.status === 'completed').length}/{group.matches.length} Trận Đã Đấu
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {groupMatches.filter(m => m.status === 'completed').length}/{groupMatches.length} Trận
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAddManualMatch(group)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', color: 'var(--neon-cyan)' }}
+                    title="Thêm trận đấu mới vào bảng này"
+                  >
+                    <Plus size={13} />
+                    <span>Thêm Trận</span>
+                  </button>
+                </div>
               </div>
 
               {/* Standings Table */}
@@ -336,69 +435,94 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
               {/* Group Fixture Matches */}
               <div>
                 <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>
-                  Lịch Thi Đấu {group.name}
+                  Lịch Thi Đấu {group.name} ({groupMatches.length} Trận)
                 </span>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {group.matches.map(m => {
-                    const isCompleted = m.status === 'completed';
-                    return (
-                      <div
-                        key={m.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: 'var(--radius-md)',
-                          background: 'rgba(15, 23, 42, 0.5)',
-                          border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-subtle)',
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: '700' }}>
-                            <span style={{ color: m.winnerId === m.teamA.id ? 'var(--neon-lime)' : 'var(--text-primary)' }}>
-                              {m.teamA.name}
-                            </span>
-                            <span style={{ margin: '0 0.4rem', color: 'var(--text-muted)' }}>vs</span>
-                            <span style={{ color: m.winnerId === m.teamB.id ? 'var(--neon-lime)' : 'var(--text-primary)' }}>
-                              {m.teamB.name}
+                {groupMatches.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '1.25rem',
+                      textAlign: 'center',
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px dashed var(--border-subtle)'
+                    }}
+                  >
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0' }}>
+                      Bảng này chưa có lịch đấu (cần tối thiểu 2 đội để tạo cặp đấu vòng tròn).
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAddManualMatch(group)}
+                      className="btn btn-outline btn-sm"
+                    >
+                      <Plus size={14} />
+                      <span>Thêm Trận Đấu Mới</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {groupMatches.map(m => {
+                      const isCompleted = m.status === 'completed';
+                      return (
+                        <div
+                          key={m.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'rgba(15, 23, 42, 0.5)',
+                            border: isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-subtle)',
+                            fontSize: '0.85rem',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: '700' }}>
+                              <span style={{ color: m.winnerId === m.teamA?.id ? 'var(--neon-lime)' : 'var(--text-primary)' }}>
+                                {m.teamA?.name || 'Đội 1'}
+                              </span>
+                              <span style={{ margin: '0 0.4rem', color: 'var(--text-muted)' }}>vs</span>
+                              <span style={{ color: m.winnerId === m.teamB?.id ? 'var(--neon-lime)' : 'var(--text-primary)' }}>
+                                {m.teamB?.name || 'Đội 2'}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                              {isCompleted ? `Tỉ số: ${m.scoreA} - ${m.scoreB}` : 'Chưa đấu (Chạm 15)'}
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                            {isCompleted ? `Tỉ số: ${m.scoreA} - ${m.scoreB}` : 'Chưa đấu (Chạm 15)'}
-                          </span>
-                        </div>
 
-                        <div>
-                          {isCompleted ? (
-                            <div
-                              style={{
-                                padding: '0.2rem 0.6rem',
-                                borderRadius: '4px',
-                                background: 'rgba(16, 185, 129, 0.15)',
-                                color: '#34d399',
-                                fontWeight: '800',
-                                fontFamily: 'var(--font-mono)'
-                              }}
-                            >
-                              {m.scoreA} : {m.scoreB}
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenScore(m)}
-                              className="btn btn-outline btn-sm"
-                              style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem' }}
-                            >
-                              <span>Nhập Điểm</span>
-                            </button>
-                          )}
+                          <div>
+                            {isCompleted ? (
+                              <div
+                                style={{
+                                  padding: '0.2rem 0.6rem',
+                                  borderRadius: '4px',
+                                  background: 'rgba(16, 185, 129, 0.15)',
+                                  color: '#34d399',
+                                  fontWeight: '800',
+                                  fontFamily: 'var(--font-mono)'
+                                }}
+                              >
+                                {m.scoreA} : {m.scoreB}
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenScore(m)}
+                                className="btn btn-outline btn-sm"
+                                style={{ padding: '0.25rem 0.65rem', fontSize: '0.78rem' }}
+                              >
+                                <span>Nhập Điểm</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -430,9 +554,9 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
           <form id="group-score-form-view" onSubmit={handleSaveScore}>
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
               <div style={{ fontSize: '1.1rem', fontWeight: '700' }}>
-                <span style={{ color: 'var(--neon-lime)' }}>{selectedMatch.teamA.name}</span>
+                <span style={{ color: 'var(--neon-lime)' }}>{selectedMatch.teamA?.name}</span>
                 <span style={{ margin: '0 0.6rem', color: 'var(--text-muted)' }}>đối đầu</span>
-                <span style={{ color: 'var(--neon-cyan)' }}>{selectedMatch.teamB.name}</span>
+                <span style={{ color: 'var(--neon-cyan)' }}>{selectedMatch.teamB?.name}</span>
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                 Vòng Bảng: Thi đấu 1 Set chạm 15 điểm (Cách biệt 2)
@@ -442,7 +566,7 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', margin: '1.5rem 0' }}>
               <div style={{ textAlign: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--neon-lime)', fontWeight: '700' }}>
-                  {selectedMatch.teamA.name}
+                  {selectedMatch.teamA?.name}
                 </span>
                 <input
                   type="number"
@@ -459,7 +583,7 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
 
               <div style={{ textAlign: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', fontWeight: '700' }}>
-                  {selectedMatch.teamB.name}
+                  {selectedMatch.teamB?.name}
                 </span>
                 <input
                   type="number"
@@ -473,6 +597,63 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
               </div>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Manual Add Match Modal */}
+      {manualAddGroup && (
+        <Modal
+          isOpen={Boolean(manualAddGroup)}
+          onClose={() => setManualAddGroup(null)}
+          title={`Thêm Trận Đấu Vào ${manualAddGroup.name}`}
+          size="md"
+          footer={
+            <>
+              <button type="button" onClick={() => setManualAddGroup(null)} className="btn btn-secondary">
+                Hủy Bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveManualMatch}
+                className="btn btn-primary"
+              >
+                <Plus size={16} />
+                <span>Tạo Trận Đấu</span>
+              </button>
+            </>
+          }
+        >
+          <div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Chọn 2 cặp đôi trong <strong>{manualAddGroup.name}</strong> để xếp lịch thi đấu:
+            </p>
+
+            <div className="form-group">
+              <label className="form-label">Đội Đôi 1 *</label>
+              <select
+                className="form-select"
+                value={manualTeamAId}
+                onChange={(e) => setManualTeamAId(e.target.value)}
+              >
+                {manualAddGroup.teams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.avgElo} Elo)</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Đội Đôi 2 *</label>
+              <select
+                className="form-select"
+                value={manualTeamBId}
+                onChange={(e) => setManualTeamBId(e.target.value)}
+              >
+                {manualAddGroup.teams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.avgElo} Elo)</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
