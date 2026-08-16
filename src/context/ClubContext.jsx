@@ -8,7 +8,7 @@ const ClubContext = createContext();
 export const ADMIN_PASSWORD = '01082026';
 
 export function ClubProvider({ children }) {
-  // User Authentication / Mandatory Login State
+  // User Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const savedRole = localStorage.getItem('fpc_user_role');
@@ -174,26 +174,52 @@ export function ClubProvider({ children }) {
    * Recalculates Elo ratings for 4 players and applies to member state
    */
   const applyMatchEloUpdate = (p1Id, p2Id, p3Id, p4Id, scoreA, scoreB, sets, matchType = 'regular', notes = '', tournamentId = null) => {
-    const p1 = members.find(m => m.id === p1Id);
-    const p2 = members.find(m => m.id === p2Id);
-    const p3 = members.find(m => m.id === p3Id);
-    const p4 = members.find(m => m.id === p4Id);
+    let eloResult = null;
+    let newMatch = null;
 
-    if (!p1 || !p2 || !p3 || !p4) return null;
-
-    const teamAWon = scoreA > scoreB;
-    const winnerTeam = teamAWon ? 'A' : 'B';
-
-    const eloResult = calculateDoublesElo(
-      [p1.elo, p2.elo],
-      [p3.elo, p4.elo],
-      scoreA,
-      scoreB,
-      teamAWon
-    );
-
-    // Update Members state
     setMembers(prev => {
+      const p1 = prev.find(m => m.id === p1Id);
+      const p2 = prev.find(m => m.id === p2Id);
+      const p3 = prev.find(m => m.id === p3Id);
+      const p4 = prev.find(m => m.id === p4Id);
+
+      if (!p1 || !p2 || !p3 || !p4) return prev;
+
+      const teamAWon = scoreA > scoreB;
+      const winnerTeam = teamAWon ? 'A' : 'B';
+
+      eloResult = calculateDoublesElo(
+        [p1.elo, p2.elo],
+        [p3.elo, p4.elo],
+        scoreA,
+        scoreB,
+        teamAWon
+      );
+
+      const matchId = `m-${Date.now()}`;
+      newMatch = {
+        id: matchId,
+        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        type: matchType,
+        tournamentId: tournamentId || null,
+        teamA: {
+          player1Id: p1.id,
+          player2Id: p2.id,
+          name: `${p1.nickname || p1.name.split(' ')[0]} & ${p2.nickname || p2.name.split(' ')[0]}`
+        },
+        teamB: {
+          player1Id: p3.id,
+          player2Id: p4.id,
+          name: `${p3.nickname || p3.name.split(' ')[0]} & ${p4.nickname || p4.name.split(' ')[0]}`
+        },
+        scoreA,
+        scoreB,
+        sets: sets && sets.length > 0 ? sets : [{ setNum: 1, scoreA, scoreB }],
+        winnerTeam,
+        eloDelta: Math.abs(eloResult.teamAChange),
+        notes: notes || 'Trận đấu giải CLB Friends.'
+      };
+
       return prev.map(member => {
         if (member.id === p1.id) {
           const newWins = teamAWon ? member.wins + 1 : member.wins;
@@ -287,31 +313,10 @@ export function ClubProvider({ children }) {
       });
     });
 
-    const matchId = `m-${Date.now()}`;
-    const newMatch = {
-      id: matchId,
-      date: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      type: matchType,
-      tournamentId: tournamentId || null,
-      teamA: {
-        player1Id: p1.id,
-        player2Id: p2.id,
-        name: `${p1.nickname || p1.name.split(' ')[0]} & ${p2.nickname || p2.name.split(' ')[0]}`
-      },
-      teamB: {
-        player1Id: p3.id,
-        player2Id: p4.id,
-        name: `${p3.nickname || p3.name.split(' ')[0]} & ${p4.nickname || p4.name.split(' ')[0]}`
-      },
-      scoreA,
-      scoreB,
-      sets: sets || [{ setNum: 1, scoreA, scoreB }],
-      winnerTeam,
-      eloDelta: Math.abs(eloResult.teamAChange),
-      notes: notes || 'Trận đấu giải CLB Friends.'
-    };
+    if (newMatch) {
+      setMatches(prev => [newMatch, ...prev]);
+    }
 
-    setMatches(prev => [newMatch, ...prev]);
     return { eloResult, newMatch };
   };
 
@@ -345,29 +350,30 @@ export function ClubProvider({ children }) {
   };
 
   /**
-   * Update a tournament match score
+   * Update a tournament match score cleanly & update Elo
    */
   const updateTournamentMatchScore = (tournamentId, matchId, scoreA, scoreB, sets = []) => {
+    let matchFound = null;
+    let isGroupMatch = false;
+    let isFinalMatch = false;
+
     setTournaments(prev => {
       return prev.map(t => {
         if (t.id !== tournamentId) return t;
 
         let updatedTournament = JSON.parse(JSON.stringify(t));
-        let matchFound = null;
-        let isGroupMatch = false;
-        let isFinalMatch = false;
 
         // Check in Groups
         if (updatedTournament.groups) {
           for (const group of updatedTournament.groups) {
-            const gm = group.matches.find(m => m.id === matchId);
+            const gm = group.matches?.find(m => m.id === matchId);
             if (gm) {
-              matchFound = gm;
+              matchFound = JSON.parse(JSON.stringify(gm));
               isGroupMatch = true;
-              gm.scoreA = scoreA;
-              gm.scoreB = scoreB;
+              gm.scoreA = Number(scoreA);
+              gm.scoreB = Number(scoreB);
               gm.sets = sets;
-              gm.winnerId = scoreA > scoreB ? gm.teamA.id : gm.teamB.id;
+              gm.winnerId = Number(scoreA) > Number(scoreB) ? gm.teamA.id : gm.teamB.id;
               gm.status = 'completed';
               break;
             }
@@ -378,15 +384,15 @@ export function ClubProvider({ children }) {
         if (!matchFound && updatedTournament.bracket) {
           const { rounds } = updatedTournament.bracket;
           for (let rIdx = 0; rIdx < rounds.length; rIdx++) {
-            const bm = rounds[rIdx].matches.find(m => m.id === matchId);
+            const bm = rounds[rIdx].matches?.find(m => m.id === matchId);
             if (bm) {
-              matchFound = bm;
-              bm.scoreA = scoreA;
-              bm.scoreB = scoreB;
+              matchFound = JSON.parse(JSON.stringify(bm));
+              bm.scoreA = Number(scoreA);
+              bm.scoreB = Number(scoreB);
               bm.sets = sets;
               bm.status = 'completed';
 
-              const teamAWon = scoreA > scoreB;
+              const teamAWon = Number(scoreA) > Number(scoreB);
               const winningTeam = teamAWon ? bm.teamA : bm.teamB;
               bm.winnerId = winningTeam.id;
 
@@ -408,13 +414,13 @@ export function ClubProvider({ children }) {
               } else {
                 const nextRound = rounds[rIdx + 1];
                 if (nextRound) {
-                  const feederMatchIndex = nextRound.matches.findIndex(m =>
+                  const feederMatchIndex = nextRound.matches?.findIndex(m =>
                     m.feederMatchIds && m.feederMatchIds.includes(matchId)
                   );
 
-                  if (feederMatchIndex !== -1) {
+                  if (feederMatchIndex !== -1 && feederMatchIndex !== undefined) {
                     const nextMatch = nextRound.matches[feederMatchIndex];
-                    if (nextMatch.feederMatchIds[0] === matchId) {
+                    if (nextMatch.feederMatchIds && nextMatch.feederMatchIds[0] === matchId) {
                       nextMatch.teamA = winningTeam;
                     } else {
                       nextMatch.teamB = winningTeam;
@@ -434,29 +440,34 @@ export function ClubProvider({ children }) {
           updatedTournament = syncGroupWinnersToQuarterfinals(updatedTournament);
         }
 
-        if (matchFound && matchFound.teamA?.playerIds && matchFound.teamB?.playerIds) {
-          const p1Id = matchFound.teamA.playerIds[0];
-          const p2Id = matchFound.teamA.playerIds[1];
-          const p3Id = matchFound.teamB.playerIds[0];
-          const p4Id = matchFound.teamB.playerIds[1];
+        return updatedTournament;
+      });
+    });
 
+    // Update Elo ratings asynchronously
+    setTimeout(() => {
+      if (matchFound && matchFound.teamA?.playerIds && matchFound.teamB?.playerIds) {
+        const p1Id = matchFound.teamA.playerIds[0];
+        const p2Id = matchFound.teamA.playerIds[1];
+        const p3Id = matchFound.teamB.playerIds[0];
+        const p4Id = matchFound.teamB.playerIds[1];
+
+        if (p1Id && p2Id && p3Id && p4Id) {
           applyMatchEloUpdate(
             p1Id,
             p2Id,
             p3Id,
             p4Id,
-            scoreA,
-            scoreB,
+            Number(scoreA),
+            Number(scoreB),
             sets,
             isFinalMatch ? 'final' : 'regular',
-            `Giải đấu ${updatedTournament.name}: ${matchFound.roundName}`,
+            `Giải đấu: ${matchFound.roundName || 'Trận đấu giải CLB'}`,
             tournamentId
           );
         }
-
-        return updatedTournament;
-      });
-    });
+      }
+    }, 50);
   };
 
   /**

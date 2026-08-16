@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useClub } from '../../context/ClubContext';
 import { calculateGroupStandings, getBestThirdPlacedTeams } from '../../utils/tournamentEngine';
 import { Modal } from '../common/Modal';
-import { CheckCircle2, Play, Trophy, Sparkles, Swords, ArrowRight, Award, Plus, PlusCircle, Trash2 } from 'lucide-react';
+import { CheckCircle2, Play, Trophy, Sparkles, Swords, ArrowRight, Award, Plus, PlusCircle, Trash2, Edit3 } from 'lucide-react';
 
 export function GroupStageView({ tournament, onNavigateToKnockout }) {
-  const { updateTournamentMatchScore, requireAdmin, tournaments, setTournaments } = useClub();
+  const { updateTournamentMatchScore, requireAdmin, setTournaments } = useClub();
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [scoreA, setScoreA] = useState(15);
   const [scoreB, setScoreB] = useState(11);
@@ -34,29 +34,25 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
   const handleOpenScore = (match) => {
     requireAdmin(() => {
       setSelectedMatch(match);
-      setScoreA(15);
-      setScoreB(11);
+      setScoreA(match.scoreA !== null ? match.scoreA : 15);
+      setScoreB(match.scoreB !== null ? match.scoreB : 11);
     });
   };
 
   const handleSaveScore = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!requireAdmin()) return;
     if (!selectedMatch) return;
 
-    const sA = Number(scoreA);
-    const sB = Number(scoreB);
+    const sA = parseInt(scoreA, 10);
+    const sB = parseInt(scoreB, 10);
+
+    if (isNaN(sA) || isNaN(sB)) {
+      alert('Vui lòng nhập điểm số hợp lệ.');
+      return;
+    }
 
     if (sA === sB) {
-      alert('Trận đấu Pickleball không có kết quả hòa.');
-      return;
-    }
-    if (Math.max(sA, sB) < 15) {
-      alert('Trận đấu vòng bảng phải thi đấu chạm đến 15 điểm.');
-      return;
-    }
-    if (Math.abs(sA - sB) < 2) {
-      alert('Luật Pickleball yêu cầu cách biệt tối thiểu 2 điểm.');
+      alert('Trận đấu Pickleball không có kết quả hòa. Vui lòng nhập điểm để phân định thắng thua.');
       return;
     }
 
@@ -222,18 +218,10 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
             <Sparkles size={20} style={{ color: 'var(--neon-cyan)' }} />
             <div>
               <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                Quy tắc thi đấu Vòng Bảng (Chạm 15 điểm)
+                Ghi Điểm & Bảng Xếp Hạng Vòng Bảng
               </strong>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-                {isOddGroups ? (
-                  <span>
-                    Giải gồm <strong>{tournament.groups.length} bảng đấu (số bảng lẻ)</strong>: Top 2 mỗi bảng và <strong>các đội Hạng 3 có thành tích tốt nhất ⭐</strong> sẽ giành vé vào Vòng Tứ Kết.
-                  </span>
-                ) : (
-                  <span>
-                    Top 2 cặp đôi dẫn đầu mỗi bảng (Hạng 1 & 2 ⭐) sẽ <strong>tự động tiến vào Vòng Tứ Kết</strong> ngay khi có kết quả.
-                  </span>
-                )}
+                Nhấn <strong>"Nhập Điểm"</strong> ở từng trận đấu để lưu tỉ số. Hệ thống sẽ tự động cập nhật bảng xếp hạng và tính điểm Elo cho các VĐV.
               </p>
             </div>
           </div>
@@ -490,24 +478,28 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                               </span>
                             </div>
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                              {isCompleted ? `Tỉ số: ${m.scoreA} - ${m.scoreB}` : 'Chưa đấu (Chạm 15)'}
+                              {isCompleted ? `Tỉ số: ${m.scoreA} - ${m.scoreB}` : 'Chưa đấu (Nhấn Nhập Điểm)'}
                             </span>
                           </div>
 
                           <div>
                             {isCompleted ? (
-                              <div
+                              <button
+                                onClick={() => handleOpenScore(m)}
+                                className="btn btn-ghost btn-sm"
                                 style={{
-                                  padding: '0.2rem 0.6rem',
+                                  padding: '0.25rem 0.65rem',
                                   borderRadius: '4px',
                                   background: 'rgba(16, 185, 129, 0.15)',
                                   color: '#34d399',
                                   fontWeight: '800',
-                                  fontFamily: 'var(--font-mono)'
+                                  fontFamily: 'var(--font-mono)',
+                                  border: '1px solid rgba(16, 185, 129, 0.3)'
                                 }}
+                                title="Sửa điểm trận đấu"
                               >
-                                {m.scoreA} : {m.scoreB}
-                              </div>
+                                {m.scoreA} : {m.scoreB} ✏️
+                              </button>
                             ) : (
                               <button
                                 onClick={() => handleOpenScore(m)}
@@ -534,10 +526,10 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
         <Modal
           isOpen={Boolean(selectedMatch)}
           onClose={() => setSelectedMatch(null)}
-          title={`Ghi Điểm Trận: ${selectedMatch.roundName}`}
+          title={`Ghi Điểm Trận: ${selectedMatch.roundName || 'Vòng Bảng'}`}
           size="md"
           footer={
-            <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '100%' }}>
               <button type="button" onClick={() => setSelectedMatch(null)} className="btn btn-secondary">
                 Hủy Bỏ
               </button>
@@ -545,10 +537,12 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                 type="button"
                 onClick={handleSaveScore}
                 className="btn btn-primary"
+                style={{ fontWeight: '700' }}
               >
-                Lưu & Cập Nhật Điểm Bảng
+                <CheckCircle2 size={16} />
+                <span>Lưu & Cập Nhật Điểm Bảng</span>
               </button>
-            </>
+            </div>
           }
         >
           <form id="group-score-form-view" onSubmit={handleSaveScore}>
@@ -559,7 +553,7 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                 <span style={{ color: 'var(--neon-cyan)' }}>{selectedMatch.teamB?.name}</span>
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Vòng Bảng: Thi đấu 1 Set chạm 15 điểm (Cách biệt 2)
+                Nhập số điểm thi đấu của 2 đội:
               </span>
             </div>
 
@@ -571,11 +565,12 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                 <input
                   type="number"
                   min="0"
-                  max="35"
+                  max="99"
                   className="form-control"
-                  style={{ width: '90px', fontSize: '1.75rem', textAlign: 'center', fontWeight: '800', marginTop: '0.3rem' }}
+                  style={{ width: '95px', fontSize: '1.75rem', textAlign: 'center', fontWeight: '800', marginTop: '0.3rem' }}
                   value={scoreA}
                   onChange={(e) => setScoreA(e.target.value)}
+                  autoFocus
                 />
               </div>
 
@@ -588,13 +583,49 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                 <input
                   type="number"
                   min="0"
-                  max="35"
+                  max="99"
                   className="form-control"
-                  style={{ width: '90px', fontSize: '1.75rem', textAlign: 'center', fontWeight: '800', marginTop: '0.3rem' }}
+                  style={{ width: '95px', fontSize: '1.75rem', textAlign: 'center', fontWeight: '800', marginTop: '0.3rem' }}
                   value={scoreB}
                   onChange={(e) => setScoreB(e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* Quick score presets for convenience */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => { setScoreA(15); setScoreB(11); }}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem' }}
+              >
+                15 - 11
+              </button>
+              <button
+                type="button"
+                onClick={() => { setScoreA(11); setScoreB(15); }}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem' }}
+              >
+                11 - 15
+              </button>
+              <button
+                type="button"
+                onClick={() => { setScoreA(11); setScoreB(9); }}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem' }}
+              >
+                11 - 9
+              </button>
+              <button
+                type="button"
+                onClick={() => { setScoreA(9); setScoreB(11); }}
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.75rem' }}
+              >
+                9 - 11
+              </button>
             </div>
           </form>
         </Modal>
@@ -608,7 +639,7 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
           title={`Thêm Trận Đấu Vào ${manualAddGroup.name}`}
           size="md"
           footer={
-            <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', width: '100%' }}>
               <button type="button" onClick={() => setManualAddGroup(null)} className="btn btn-secondary">
                 Hủy Bỏ
               </button>
@@ -620,7 +651,7 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
                 <Plus size={16} />
                 <span>Tạo Trận Đấu</span>
               </button>
-            </>
+            </div>
           }
         >
           <div>
