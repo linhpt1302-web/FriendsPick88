@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
-import { UserPlus, Edit3, User, Check, Shield } from 'lucide-react';
+import { UserPlus, Edit3, Upload, Image, RefreshCw, CheckCircle2, Sparkles } from 'lucide-react';
 
 export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
   const { addMember, updateMember, requireAdmin } = useClub();
+  const fileInputRef = useRef(null);
 
   const isEditing = Boolean(memberToEdit);
+
+  const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -17,8 +20,10 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
     elo: 1150,
     playStyle: 'Dink & Thả bóng kiểm soát',
     paddle: 'Vợt Carbon tiêu chuẩn',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+    avatar: DEFAULT_AVATAR
   });
+
+  const [uploadNotice, setUploadNotice] = useState('');
 
   useEffect(() => {
     if (memberToEdit) {
@@ -31,8 +36,9 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
         elo: memberToEdit.elo || 1150,
         playStyle: memberToEdit.playStyle || 'Dink & Thả bóng kiểm soát',
         paddle: memberToEdit.paddle || 'Vợt Carbon tiêu chuẩn',
-        avatar: memberToEdit.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        avatar: memberToEdit.avatar || DEFAULT_AVATAR
       });
+      setUploadNotice('');
     } else {
       setFormData({
         name: '',
@@ -43,8 +49,9 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
         elo: 1150,
         playStyle: 'Dink & Thả bóng kiểm soát',
         paddle: 'Vợt Carbon tiêu chuẩn',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        avatar: DEFAULT_AVATAR
       });
+      setUploadNotice('');
     }
   }, [memberToEdit, isOpen]);
 
@@ -62,6 +69,62 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
       tier: newTier,
       elo: isEditing ? prev.elo : suggestedElo
     }));
+  };
+
+  /**
+   * Handle Upload Image from PC & Automatic Center-Crop Resize to exactly 75x75 px
+   */
+  const handleAvatarFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một tập tin hình ảnh hợp lệ (PNG, JPG, WEBP, JPEG...).');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (readerEvent) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        // Create canvas of exact 75x75 pixels
+        const canvas = document.createElement('canvas');
+        canvas.width = 75;
+        canvas.height = 75;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          alert('Không thể khởi tạo bộ xử lý ảnh canvas.');
+          return;
+        }
+
+        // Apply high-quality interpolation
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Calculate center crop square
+        const minDim = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+        const startX = ((img.naturalWidth || img.width) - minDim) / 2;
+        const startY = ((img.naturalHeight || img.height) - minDim) / 2;
+
+        // Draw cropped and scaled image onto 75x75 canvas
+        ctx.drawImage(img, startX, startY, minDim, minDim, 0, 0, 75, 75);
+
+        // Convert to optimized Base64 Data URL
+        const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+        setFormData(prev => ({
+          ...prev,
+          avatar: resizedDataUrl
+        }));
+
+        setUploadNotice(`Đã tải ảnh "${file.name}" và resize chuẩn 75×75 px thành công!`);
+      };
+
+      img.src = readerEvent.target?.result;
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleFormSubmit = (e) => {
@@ -82,7 +145,7 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
         elo: Number(formData.elo) || 1150,
         playStyle: formData.playStyle.trim() || 'Toàn diện',
         paddle: formData.paddle.trim() || 'Vợt Carbon tiêu chuẩn',
-        avatar: formData.avatar.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        avatar: formData.avatar || DEFAULT_AVATAR
       });
       alert(`Đã cập nhật thông tin hội viên "${formData.name}" thành công!`);
     } else {
@@ -95,7 +158,7 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
         elo: Number(formData.elo) || 1150,
         playStyle: formData.playStyle.trim() || 'Toàn diện',
         paddle: formData.paddle.trim() || 'Vợt Carbon tiêu chuẩn',
-        avatar: formData.avatar.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+        avatar: formData.avatar || DEFAULT_AVATAR
       });
       if (created) {
         alert(`Đã thêm thành công hội viên "${formData.name}" vào CLB!`);
@@ -129,6 +192,108 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
       }
     >
       <form id="member-form" onSubmit={handleFormSubmit}>
+        {/* AVATAR UPLOAD & 75x75 RESIZE SECTION */}
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.6)',
+            border: '1px solid rgba(204, 255, 0, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            padding: '1.1rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1.25rem',
+            flexWrap: 'wrap'
+          }}
+        >
+          {/* 75x75 Preview Box */}
+          <div style={{ position: 'relative', textAlign: 'center' }}>
+            <img
+              src={formData.avatar}
+              alt="Avatar preview"
+              style={{
+                width: '75px',
+                height: '75px',
+                borderRadius: 'var(--radius-md)',
+                objectFit: 'cover',
+                border: '2px solid var(--neon-lime)',
+                boxShadow: '0 0 12px rgba(204, 255, 0, 0.25)',
+                display: 'block'
+              }}
+            />
+            <span
+              style={{
+                fontSize: '0.68rem',
+                color: 'var(--neon-lime)',
+                fontWeight: '700',
+                display: 'block',
+                marginTop: '0.3rem'
+              }}
+            >
+              75 × 75 px
+            </span>
+          </div>
+
+          {/* Upload Action Area */}
+          <div style={{ flex: '1 1 200px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+              <Sparkles size={15} style={{ color: 'var(--neon-lime)' }} />
+              <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                Ảnh Đại Diện Hội Viên
+              </strong>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 0.65rem 0', lineHeight: '1.4' }}>
+              Tải ảnh từ máy tính (PC). Hệ thống sẽ <strong>tự động cắt vuông và resize về đúng 75×75 px</strong> siêu nét.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFileUpload}
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn btn-primary btn-sm"
+                style={{ padding: '0.35rem 0.8rem', fontSize: '0.82rem' }}
+              >
+                <Upload size={14} />
+                <span>Chọn ảnh từ PC</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const randomId = Math.floor(Math.random() * 1000);
+                  setFormData(prev => ({
+                    ...prev,
+                    avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80&r=${randomId}`
+                  }));
+                  setUploadNotice('Đã chọn ảnh mẫu ngẫu nhiên.');
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}
+              >
+                <RefreshCw size={13} />
+                <span>Ảnh mẫu</span>
+              </button>
+            </div>
+
+            {uploadNotice && (
+              <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <CheckCircle2 size={13} />
+                <span>{uploadNotice}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Member Details */}
         <div className="grid-2">
           <div className="form-group">
             <label className="form-label">Họ và Tên *</label>
@@ -240,14 +405,18 @@ export function MemberFormModal({ isOpen, onClose, memberToEdit = null }) {
           </div>
         </div>
 
+        {/* Optional Custom Image URL */}
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">Đường dẫn ảnh đại diện (Avatar URL)</label>
+          <label className="form-label" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            Hoặc nhập đường dẫn ảnh đại diện trực tiếp (URL)
+          </label>
           <input
             type="url"
             className="form-control"
             placeholder="https://..."
             value={formData.avatar}
             onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+            style={{ fontSize: '0.8rem' }}
           />
         </div>
       </form>

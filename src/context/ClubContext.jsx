@@ -25,16 +25,19 @@ export function ClubProvider({ children }) {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Initialize members: ensure 29 members with new names & Elo values
+  // Initialize members: 29 members with 0 match stats
   const [members, setMembers] = useState(() => {
     try {
       const saved = localStorage.getItem('fpc_members');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // If saved list contains old test names like 'Marcus Trần', overwrite with new 29 members
-        const hasOldData = parsed.some(m => m.name === 'Marcus Trần' || m.name === 'Elena Nguyễn');
-        if (!hasOldData && Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        // Check if data is already clean 29 members
+        if (Array.isArray(parsed) && parsed.length === INITIAL_MEMBERS.length) {
+          // Sync avatars and ensure 0 matches if we're resetting
+          const hasOldMatches = parsed.some(m => m.matchesPlayed > 0);
+          if (!hasOldMatches) {
+            return parsed;
+          }
         }
       }
       return INITIAL_MEMBERS;
@@ -48,9 +51,9 @@ export function ClubProvider({ children }) {
       const saved = localStorage.getItem('fpc_matches');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const hasOldData = parsed.some(m => m.teamA?.name?.includes('Marcus'));
-        if (!hasOldData && Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Clear match history as requested
+          localStorage.removeItem('fpc_matches');
         }
       }
       return INITIAL_MATCHES;
@@ -64,8 +67,7 @@ export function ClubProvider({ children }) {
       const saved = localStorage.getItem('fpc_tournaments');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const hasOldData = parsed.some(t => t.name?.includes('Summer Slam') && t.groups?.[0]?.teams?.[0]?.name?.includes('Marcus'));
-        if (!hasOldData && Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
@@ -369,7 +371,7 @@ export function ClubProvider({ children }) {
           }
         }
 
-        // Check in Knockout Bracket (Quarterfinals -> Semifinals -> Finals)
+        // Check in Knockout Bracket
         if (!matchFound && updatedTournament.bracket) {
           const { rounds } = updatedTournament.bracket;
           for (let rIdx = 0; rIdx < rounds.length; rIdx++) {
@@ -385,13 +387,11 @@ export function ClubProvider({ children }) {
               const winningTeam = teamAWon ? bm.teamA : bm.teamB;
               bm.winnerId = winningTeam.id;
 
-              // Check if Final Round
               if (rIdx === rounds.length - 1) {
                 isFinalMatch = true;
                 updatedTournament.bracket.champion = winningTeam;
                 updatedTournament.status = 'completed';
 
-                // Award MVP badge
                 if (winningTeam.playerIds) {
                   setMembers(prevMembers => prevMembers.map(m => {
                     if (winningTeam.playerIds.includes(m.id)) {
@@ -403,7 +403,6 @@ export function ClubProvider({ children }) {
                   }));
                 }
               } else {
-                // Advance winner to the next round
                 const nextRound = rounds[rIdx + 1];
                 if (nextRound) {
                   const feederMatchIndex = nextRound.matches.findIndex(m =>
@@ -428,12 +427,10 @@ export function ClubProvider({ children }) {
           }
         }
 
-        // Sync group winners into Quarterfinal matchups
         if (isGroupMatch) {
           updatedTournament = syncGroupWinnersToQuarterfinals(updatedTournament);
         }
 
-        // Apply Elo ratings update
         if (matchFound && matchFound.teamA?.playerIds && matchFound.teamB?.playerIds) {
           const p1Id = matchFound.teamA.playerIds[0];
           const p2Id = matchFound.teamA.playerIds[1];
@@ -501,7 +498,7 @@ export function ClubProvider({ children }) {
       elo: initialElo,
       dupr: eloToDupr(initialElo),
       gender: memberData.gender || 'Nam',
-      status: memberData.status || 'active', // 'active' | 'paused' | 'left'
+      status: memberData.status || 'active',
       tier: memberData.tier || (initialElo >= 1260 ? 'Tiềm năng' : 'Mới bắt đầu'),
       playStyle: memberData.playStyle || 'Toàn diện',
       paddle: memberData.paddle || 'Vợt Carbon tiêu chuẩn',
@@ -528,7 +525,7 @@ export function ClubProvider({ children }) {
     setMembers(prev => {
       return prev.map(m => {
         if (m.id !== memberId) return m;
-        const newElo = Number(updatedData.elo) !== undefined ? Number(updatedData.elo) : m.elo;
+        const newElo = updatedData.elo !== undefined ? Number(updatedData.elo) : m.elo;
         return {
           ...m,
           ...updatedData,
@@ -542,8 +539,8 @@ export function ClubProvider({ children }) {
       setSelectedPlayer(prev => ({
         ...prev,
         ...updatedData,
-        elo: Number(updatedData.elo) !== undefined ? Number(updatedData.elo) : prev.elo,
-        dupr: eloToDupr(Number(updatedData.elo) !== undefined ? Number(updatedData.elo) : prev.elo)
+        elo: updatedData.elo !== undefined ? Number(updatedData.elo) : prev.elo,
+        dupr: eloToDupr(updatedData.elo !== undefined ? Number(updatedData.elo) : prev.elo)
       }));
     }
 
@@ -587,7 +584,7 @@ export function ClubProvider({ children }) {
   };
 
   /**
-   * Reset data to initial 29 members
+   * Reset data to initial 29 members with 0 match stats
    */
   const resetToDefaultData = () => {
     if (!requireAdmin()) return;

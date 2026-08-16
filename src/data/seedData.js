@@ -1,6 +1,6 @@
 /**
  * Dữ liệu hội viên chính thức của CLB Pickleball Friends (29 Thành viên)
- * Được nhập theo danh sách thành viên và điểm Elo do Ban Quản Trị cung cấp.
+ * Toàn bộ lịch sử đấu và thành tích đã được đặt lại ban đầu (0 trận, 0 thắng, 0 thua).
  */
 
 export const INITIAL_MEMBERS = [
@@ -12,17 +12,17 @@ export const INITIAL_MEMBERS = [
     elo: 1260,
     dupr: 3.25,
     gender: 'Nữ',
-    status: 'active', // 'active' | 'paused' | 'left'
+    status: 'active',
     tier: 'Tiềm năng',
     playStyle: 'Dink & Thả bóng kiểm soát',
     paddle: 'Selkirk Vanguard Pro',
-    matchesPlayed: 18,
-    wins: 12,
-    losses: 6,
-    streak: 3,
-    pointsScored: 245,
-    badges: ['hot-streak'],
-    favoritePartnerId: 'p-2',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-03-01'
   },
   {
@@ -37,13 +37,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Tấn công Drive mạnh mẽ',
     paddle: 'CRBN 1X Power Series',
-    matchesPlayed: 20,
-    wins: 13,
-    losses: 7,
-    streak: 2,
-    pointsScored: 270,
-    badges: ['hot-streak'],
-    favoritePartnerId: 'p-1',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-03-05'
   },
   {
@@ -58,13 +58,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Phòng thủ bền bỉ',
     paddle: 'Joola Perseus 3S',
-    matchesPlayed: 12,
-    wins: 6,
-    losses: 6,
-    streak: 1,
-    pointsScored: 145,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-4',
+    favoritePartnerId: null,
     joinDate: '2024-04-10'
   },
   {
@@ -79,13 +79,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Đập bóng lưới nhanh',
     paddle: 'Paddletek Bantam TS-5',
-    matchesPlayed: 10,
-    wins: 5,
-    losses: 5,
-    streak: -1,
-    pointsScored: 120,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-3',
+    favoritePartnerId: null,
     joinDate: '2024-04-12'
   },
   {
@@ -100,13 +100,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Giao bóng cắt xoáy',
     paddle: 'Head Radical Tour',
-    matchesPlayed: 11,
-    wins: 5,
-    losses: 6,
-    streak: 1,
-    pointsScored: 130,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-6',
+    favoritePartnerId: null,
     joinDate: '2024-04-15'
   },
   {
@@ -121,13 +121,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Dink chéo sân chuẩn xác',
     paddle: 'Franklin Signature',
-    matchesPlayed: 14,
-    wins: 7,
-    losses: 7,
-    streak: 1,
-    pointsScored: 160,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-5',
+    favoritePartnerId: null,
     joinDate: '2024-04-20'
   },
   {
@@ -142,13 +142,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Chuyền bổng Lob & Reset',
     paddle: 'Selkirk SLK Halo',
-    matchesPlayed: 9,
-    wins: 4,
-    losses: 5,
-    streak: -1,
-    pointsScored: 105,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-8',
+    favoritePartnerId: null,
     joinDate: '2024-05-01'
   },
   {
@@ -163,13 +163,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Đánh bóng bền vạch cuối',
     paddle: 'Six Zero Black Diamond',
-    matchesPlayed: 10,
-    wins: 5,
-    losses: 5,
-    streak: 1,
-    pointsScored: 115,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-7',
+    favoritePartnerId: null,
     joinDate: '2024-05-05'
   },
   {
@@ -184,13 +184,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Điều bóng mềm mại khu Kitchen',
     paddle: 'Gearbox GX5 Control',
-    matchesPlayed: 15,
-    wins: 8,
-    losses: 7,
-    streak: 2,
-    pointsScored: 180,
-    badges: ['veteran'],
-    favoritePartnerId: 'p-10',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-02-15'
   },
   {
@@ -205,13 +205,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Bắt lưới Kitchen nhanh nhạy',
     paddle: 'Diadem Icon v2',
-    matchesPlayed: 12,
-    wins: 6,
-    losses: 6,
-    streak: 1,
-    pointsScored: 140,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-9',
+    favoritePartnerId: null,
     joinDate: '2024-05-10'
   },
   {
@@ -226,13 +226,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Drive xoáy cuộn & Gài góc',
     paddle: 'Volair Mach 1 Forza',
-    matchesPlayed: 16,
-    wins: 11,
-    losses: 5,
-    streak: 4,
-    pointsScored: 220,
-    badges: ['hot-streak'],
-    favoritePartnerId: 'p-12',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-03-20'
   },
   {
@@ -247,13 +247,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Phản tạt lưới tốc độ',
     paddle: 'Ronbus R1 Nova',
-    matchesPlayed: 10,
-    wins: 5,
-    losses: 5,
-    streak: -1,
-    pointsScored: 110,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-11',
+    favoritePartnerId: null,
     joinDate: '2024-05-18'
   },
   {
@@ -268,13 +268,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Kiên nhẫn dink cự ly gần',
     paddle: 'Engage Pursuit Pro',
-    matchesPlayed: 8,
-    wins: 4,
-    losses: 4,
-    streak: 1,
-    pointsScored: 95,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-14',
+    favoritePartnerId: null,
     joinDate: '2024-06-01'
   },
   {
@@ -289,13 +289,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Thủ vạch cuối & Reset',
     paddle: 'Friday Carbon Original',
-    matchesPlayed: 8,
-    wins: 3,
-    losses: 5,
-    streak: -2,
-    pointsScored: 85,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-13',
+    favoritePartnerId: null,
     joinDate: '2024-06-05'
   },
   {
@@ -310,13 +310,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Đập Smash uy lực vạch cuối',
     paddle: 'CRBN 2X Power Series',
-    matchesPlayed: 17,
-    wins: 11,
-    losses: 6,
-    streak: 2,
-    pointsScored: 230,
-    badges: ['ace-server'],
-    favoritePartnerId: 'p-16',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-03-25'
   },
   {
@@ -331,13 +331,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Giao bóng hiểm & Cắt xoáy',
     paddle: 'Onix Z5 Graphite',
-    matchesPlayed: 11,
-    wins: 5,
-    losses: 6,
-    streak: 1,
-    pointsScored: 125,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-15',
+    favoritePartnerId: null,
     joinDate: '2024-06-10'
   },
   {
@@ -352,13 +352,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Chơi bóng toàn diện linh hoạt',
     paddle: 'Franklin Christine McGrath',
-    matchesPlayed: 9,
-    wins: 4,
-    losses: 5,
-    streak: -1,
-    pointsScored: 100,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-18',
+    favoritePartnerId: null,
     joinDate: '2024-06-15'
   },
   {
@@ -373,13 +373,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Thủ chắc chắn & Bắt bóng lưới',
     paddle: 'Paddletek Tempest Pro',
-    matchesPlayed: 10,
-    wins: 5,
-    losses: 5,
-    streak: 1,
-    pointsScored: 118,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-17',
+    favoritePartnerId: null,
     joinDate: '2024-06-20'
   },
   {
@@ -394,13 +394,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Đẩy bóng sâu cuối sân',
     paddle: 'Six Zero Double Black',
-    matchesPlayed: 8,
-    wins: 4,
-    losses: 4,
-    streak: -1,
-    pointsScored: 92,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-20',
+    favoritePartnerId: null,
     joinDate: '2024-07-01'
   },
   {
@@ -415,13 +415,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Đỡ bóng bền & Phản công nhanh',
     paddle: 'Selkirk Invikta Pro',
-    matchesPlayed: 10,
-    wins: 5,
-    losses: 5,
-    streak: 1,
-    pointsScored: 120,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-19',
+    favoritePartnerId: null,
     joinDate: '2024-07-05'
   },
   {
@@ -436,13 +436,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Tấn công lưới chớp nhoáng',
     paddle: 'Joola Hyperion CFS',
-    matchesPlayed: 7,
-    wins: 3,
-    losses: 4,
-    streak: -1,
-    pointsScored: 80,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-22',
+    favoritePartnerId: null,
     joinDate: '2024-07-10'
   },
   {
@@ -457,13 +457,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Kỹ thuật dink mềm & Cắt bóng',
     paddle: 'CRBN 1X Power',
-    matchesPlayed: 16,
-    wins: 11,
-    losses: 5,
-    streak: 3,
-    pointsScored: 215,
-    badges: ['hot-streak'],
-    favoritePartnerId: 'p-23',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-04-01'
   },
   {
@@ -478,13 +478,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Kinh nghiệm phán đoán tình huống',
     paddle: 'Head Extreme Elite',
-    matchesPlayed: 22,
-    wins: 15,
-    losses: 7,
-    streak: 2,
-    pointsScored: 290,
-    badges: ['veteran'],
-    favoritePartnerId: 'p-22',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-01-10'
   },
   {
@@ -499,13 +499,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Cú đánh Drive xoáy sấm sét',
     paddle: 'Six Zero Black Diamond',
-    matchesPlayed: 15,
-    wins: 10,
-    losses: 5,
-    streak: 2,
-    pointsScored: 200,
-    badges: ['ace-server'],
-    favoritePartnerId: 'p-25',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-04-05'
   },
   {
@@ -520,13 +520,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Đấu lưới tay nhanh & Đập bóng',
     paddle: 'Diadem Warrior Edge',
-    matchesPlayed: 14,
-    wins: 9,
-    losses: 5,
-    streak: 1,
-    pointsScored: 185,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-24',
+    favoritePartnerId: null,
     joinDate: '2024-04-08'
   },
   {
@@ -541,13 +541,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Giao bóng an toàn & Thả dink',
     paddle: 'Selkirk SLK Halo',
-    matchesPlayed: 8,
-    wins: 4,
-    losses: 4,
-    streak: 1,
-    pointsScored: 90,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-27',
+    favoritePartnerId: null,
     joinDate: '2024-07-15'
   },
   {
@@ -562,13 +562,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Bắt lưới chuẩn xác & Cứu bóng',
     paddle: 'Volair Mach 1',
-    matchesPlayed: 15,
-    wins: 10,
-    losses: 5,
-    streak: 2,
-    pointsScored: 195,
-    badges: ['hot-streak'],
-    favoritePartnerId: 'p-28',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-04-10'
   },
   {
@@ -583,13 +583,13 @@ export const INITIAL_MEMBERS = [
     tier: 'Tiềm năng',
     playStyle: 'Thể lực dồi dào & Smash dứt điểm',
     paddle: 'Friday Carbon 2.0',
-    matchesPlayed: 16,
-    wins: 11,
-    losses: 5,
-    streak: 3,
-    pointsScored: 210,
-    badges: ['hot-streak'],
-    favoritePartnerId: 'p-27',
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
+    badges: [],
+    favoritePartnerId: null,
     joinDate: '2024-04-12'
   },
   {
@@ -604,359 +604,50 @@ export const INITIAL_MEMBERS = [
     tier: 'Mới bắt đầu',
     playStyle: 'Đam mê rèn luyện & Phản xạ',
     paddle: 'Onix Stryker',
-    matchesPlayed: 6,
-    wins: 2,
-    losses: 4,
-    streak: -1,
-    pointsScored: 60,
+    matchesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    streak: 0,
+    pointsScored: 0,
     badges: [],
-    favoritePartnerId: 'p-1',
+    favoritePartnerId: null,
     joinDate: '2024-07-20'
   }
 ];
 
-export const INITIAL_MATCHES = [
-  {
-    id: 'm-101',
-    date: '2026-08-15 18:30',
-    type: 'regular',
-    teamA: {
-      player1Id: 'p-1',
-      player2Id: 'p-2',
-      name: 'Phạm Linh & Tuấn Anh'
-    },
-    teamB: {
-      player1Id: 'p-11',
-      player2Id: 'p-15',
-      name: 'Hương Xoăn & Cường'
-    },
-    scoreA: 15,
-    scoreB: 12,
-    sets: [{ setNum: 1, scoreA: 15, scoreB: 12 }],
-    winnerTeam: 'A',
-    eloDelta: 16,
-    notes: 'Trận đấu mở màn mùa giải kịch tính vạch cuối sân.'
-  },
-  {
-    id: 'm-102',
-    date: '2026-08-14 19:15',
-    type: 'regular',
-    teamA: {
-      player1Id: 'p-22',
-      player2Id: 'p-23',
-      name: 'Giang Đức & Chú Tuyến'
-    },
-    teamB: {
-      player1Id: 'p-24',
-      player2Id: 'p-25',
-      name: 'Duy Nguyễn & Tuấn Liên'
-    },
-    scoreA: 16,
-    scoreB: 14,
-    sets: [{ setNum: 1, scoreA: 16, scoreB: 14 }],
-    winnerTeam: 'A',
-    eloDelta: 18,
-    notes: 'Pha deuce kéo dài 25 chạm nghẹt thở!'
-  },
-  {
-    id: 'm-103',
-    date: '2026-08-12 17:45',
-    type: 'regular',
-    teamA: {
-      player1Id: 'p-27',
-      player2Id: 'p-28',
-      name: 'Liên Tuấn & Tâm 2k6'
-    },
-    teamB: {
-      player1Id: 'p-3',
-      player2Id: 'p-4',
-      name: 'Tân BS & Quyền QS'
-    },
-    scoreA: 15,
-    scoreB: 8,
-    sets: [{ setNum: 1, scoreA: 15, scoreB: 8 }],
-    winnerTeam: 'A',
-    eloDelta: 14,
-    notes: 'Tâm 2k6 ghi điểm áp đảo với các pha smash trên lưới.'
-  }
-];
+// Lịch sử trận đấu sạch (Chưa có trận nào)
+export const INITIAL_MATCHES = [];
 
-export const INITIAL_TOURNAMENTS = [
-  {
-    id: 'tourney-championship-1',
-    name: 'Giải Đôi Vô Địch Mùa Hè Friends Summer Slam 2026',
-    date: '15-18 Tháng 8, 2026',
-    format: 'championship',
-    status: 'in-progress',
-    surface: 'Sân Trung tâm 1 & 2',
-    prizeTrophy: 'Cúp Vàng Vô Địch & Cặp Vợt Selkirk Pro 🏆',
-    description: 'Giải đấu đôi đỉnh cao 4 bảng đấu (A, B, C, D), top 2 mỗi bảng vào Tứ kết loại trực tiếp đến Chung kết Bo3.',
-    totalTeams: 8,
-    numGroups: 4,
-    groups: [
-      {
-        id: 'group-a',
-        name: 'Bảng A',
-        code: 'A',
-        teams: [
-          { id: 't-1', name: 'Phạm Linh & Tuấn Anh', playerIds: ['p-1', 'p-2'], avgElo: 1260 },
-          { id: 't-8', name: 'Điệp & Hạnh', playerIds: ['p-26', 'p-29'], avgElo: 1150 }
-        ],
-        matches: [
-          {
-            id: 'gm-a-1',
-            groupId: 'group-a',
-            groupName: 'Bảng A',
-            stage: 'group',
-            roundName: 'Bảng A - Lượt 1',
-            teamA: { id: 't-1', name: 'Phạm Linh & Tuấn Anh', playerIds: ['p-1', 'p-2'] },
-            teamB: { id: 't-8', name: 'Điệp & Hạnh', playerIds: ['p-26', 'p-29'] },
-            scoreA: 15,
-            scoreB: 9,
-            winnerId: 't-1',
-            isFinal: false,
-            status: 'completed'
-          }
-        ]
-      },
-      {
-        id: 'group-b',
-        name: 'Bảng B',
-        code: 'B',
-        teams: [
-          { id: 't-2', name: 'Hương Xoăn & Cường', playerIds: ['p-11', 'p-15'], avgElo: 1260 },
-          { id: 't-7', name: 'Tân BS & Quyền QS', playerIds: ['p-3', 'p-4'], avgElo: 1150 }
-        ],
-        matches: [
-          {
-            id: 'gm-b-1',
-            groupId: 'group-b',
-            groupName: 'Bảng B',
-            stage: 'group',
-            roundName: 'Bảng B - Lượt 1',
-            teamA: { id: 't-2', name: 'Hương Xoăn & Cường', playerIds: ['p-11', 'p-15'] },
-            teamB: { id: 't-7', name: 'Tân BS & Quyền QS', playerIds: ['p-3', 'p-4'] },
-            scoreA: 15,
-            scoreB: 11,
-            winnerId: 't-2',
-            isFinal: false,
-            status: 'completed'
-          }
-        ]
-      },
-      {
-        id: 'group-c',
-        name: 'Bảng C',
-        code: 'C',
-        teams: [
-          { id: 't-3', name: 'Giang Đức & Chú Tuyến', playerIds: ['p-22', 'p-23'], avgElo: 1260 },
-          { id: 't-6', name: 'Quyền HT & Ngọc GV', playerIds: ['p-5', 'p-6'], avgElo: 1150 }
-        ],
-        matches: [
-          {
-            id: 'gm-c-1',
-            groupId: 'group-c',
-            groupName: 'Bảng C',
-            stage: 'group',
-            roundName: 'Bảng C - Lượt 1',
-            teamA: { id: 't-3', name: 'Giang Đức & Chú Tuyến', playerIds: ['p-22', 'p-23'] },
-            teamB: { id: 't-6', name: 'Quyền HT & Ngọc GV', playerIds: ['p-5', 'p-6'] },
-            scoreA: 15,
-            scoreB: 10,
-            winnerId: 't-3',
-            isFinal: false,
-            status: 'completed'
-          }
-        ]
-      },
-      {
-        id: 'group-d',
-        name: 'Bảng D',
-        code: 'D',
-        teams: [
-          { id: 't-4', name: 'Duy Nguyễn & Tuấn Liên', playerIds: ['p-24', 'p-25'], avgElo: 1260 },
-          { id: 't-5', name: 'Liên Tuấn & Tâm 2k6', playerIds: ['p-27', 'p-28'], avgElo: 1260 }
-        ],
-        matches: [
-          {
-            id: 'gm-d-1',
-            groupId: 'group-d',
-            groupName: 'Bảng D',
-            stage: 'group',
-            roundName: 'Bảng D - Lượt 1',
-            teamA: { id: 't-4', name: 'Duy Nguyễn & Tuấn Liên', playerIds: ['p-24', 'p-25'] },
-            teamB: { id: 't-5', name: 'Liên Tuấn & Tâm 2k6', playerIds: ['p-27', 'p-28'] },
-            scoreA: 15,
-            scoreB: 13,
-            winnerId: 't-4',
-            isFinal: false,
-            status: 'completed'
-          }
-        ]
-      }
-    ],
-    bracket: {
-      rounds: [
-        {
-          roundNumber: 1,
-          title: 'Vòng Tứ Kết (Chạm 15)',
-          matches: [
-            {
-              id: 'qf-1',
-              round: 1,
-              stage: 'quarterfinal',
-              roundName: 'Tứ kết 1 (Nhất A vs Nhì B)',
-              teamA: { id: 't-1', name: 'Phạm Linh & Tuấn Anh', playerIds: ['p-1', 'p-2'] },
-              teamB: { id: 't-7', name: 'Tân BS & Quyền QS', playerIds: ['p-3', 'p-4'] },
-              scoreA: 15,
-              scoreB: 8,
-              winnerId: 't-1',
-              isFinal: false,
-              status: 'completed'
-            },
-            {
-              id: 'qf-2',
-              round: 1,
-              stage: 'quarterfinal',
-              roundName: 'Tứ kết 2 (Nhất C vs Nhì D)',
-              teamA: { id: 't-3', name: 'Giang Đức & Chú Tuyến', playerIds: ['p-22', 'p-23'] },
-              teamB: { id: 't-5', name: 'Liên Tuấn & Tâm 2k6', playerIds: ['p-27', 'p-28'] },
-              scoreA: 15,
-              scoreB: 12,
-              winnerId: 't-3',
-              isFinal: false,
-              status: 'completed'
-            },
-            {
-              id: 'qf-3',
-              round: 1,
-              stage: 'quarterfinal',
-              roundName: 'Tứ kết 3 (Nhất B vs Nhì A)',
-              teamA: { id: 't-2', name: 'Hương Xoăn & Cường', playerIds: ['p-11', 'p-15'] },
-              teamB: { id: 't-8', name: 'Điệp & Hạnh', playerIds: ['p-26', 'p-29'] },
-              scoreA: 15,
-              scoreB: 7,
-              winnerId: 't-2',
-              isFinal: false,
-              status: 'completed'
-            },
-            {
-              id: 'qf-4',
-              round: 1,
-              stage: 'quarterfinal',
-              roundName: 'Tứ kết 4 (Nhất D vs Nhì C)',
-              teamA: { id: 't-4', name: 'Duy Nguyễn & Tuấn Liên', playerIds: ['p-24', 'p-25'] },
-              teamB: { id: 't-6', name: 'Quyền HT & Ngọc GV', playerIds: ['p-5', 'p-6'] },
-              scoreA: null,
-              scoreB: null,
-              winnerId: null,
-              isFinal: false,
-              status: 'scheduled'
-            }
-          ]
-        },
-        {
-          roundNumber: 2,
-          title: 'Vòng Bán Kết (Chạm 15)',
-          matches: [
-            {
-              id: 'sf-1',
-              round: 2,
-              stage: 'semifinal',
-              roundName: 'Bán kết 1 (Thắng TK1 vs Thắng TK2)',
-              teamA: { id: 't-1', name: 'Phạm Linh & Tuấn Anh', playerIds: ['p-1', 'p-2'] },
-              teamB: { id: 't-3', name: 'Giang Đức & Chú Tuyến', playerIds: ['p-22', 'p-23'] },
-              scoreA: null,
-              scoreB: null,
-              winnerId: null,
-              isFinal: false,
-              status: 'scheduled',
-              feederMatchIds: ['qf-1', 'qf-2']
-            },
-            {
-              id: 'sf-2',
-              round: 2,
-              stage: 'semifinal',
-              roundName: 'Bán kết 2 (Thắng TK3 vs Thắng TK4)',
-              teamA: { id: 't-2', name: 'Hương Xoăn & Cường', playerIds: ['p-11', 'p-15'] },
-              teamB: null,
-              scoreA: null,
-              scoreB: null,
-              winnerId: null,
-              isFinal: false,
-              status: 'pending',
-              feederMatchIds: ['qf-3', 'qf-4']
-            }
-          ]
-        },
-        {
-          roundNumber: 3,
-          title: 'Chung Kết Tranh Cúp (Bo3 chạm 11)',
-          matches: [
-            {
-              id: 'final-1',
-              round: 3,
-              stage: 'final',
-              roundName: 'Chung Kết Vô Địch (Thắng 2/3 set)',
-              teamA: null,
-              teamB: null,
-              scoreA: null,
-              scoreB: null,
-              sets: [],
-              winnerId: null,
-              isFinal: true,
-              status: 'pending',
-              feederMatchIds: ['sf-1', 'sf-2']
-            }
-          ]
-        }
-      ],
-      champion: null
-    }
-  }
-];
+// Giải đấu CLB mới (Sẵn sàng tạo mới)
+export const INITIAL_TOURNAMENTS = [];
 
 export const BADGE_DEFINITIONS = {
   'hot-streak': {
     id: 'hot-streak',
-    name: 'Chuỗi Thắng',
+    name: 'Chuỗi Bất Bại',
+    description: 'Đạt chuỗi 3 trận thắng liên tiếp',
     icon: '🔥',
-    description: 'Thắng liên tiếp 3 trận đôi trở lên',
-    color: '#f97316'
-  },
-  'mvp': {
-    id: 'mvp',
-    name: 'Nhà Vô Địch MVP',
-    icon: '🏆',
-    description: 'Lên ngôi quán quân tại giải đấu của CLB',
-    color: '#fbbf24'
-  },
-  'giant-killer': {
-    id: 'giant-killer',
-    name: 'Khắc Tinh Cao Thủ',
-    icon: '⚡',
-    description: 'Đánh bại đôi đối thủ có Elo cao hơn >150 điểm',
-    color: '#06b6d4'
-  },
-  'iron-defense': {
-    id: 'iron-defense',
-    name: 'Bức Tường Phòng Thủ',
-    icon: '🛡️',
-    description: 'Giữ đối thủ dưới 5 điểm trong một trận đấu',
-    color: '#3b82f6'
-  },
-  'ace-server': {
-    id: 'ace-server',
-    name: 'Giao Bóng Hiểm',
-    icon: '🎯',
-    description: 'Có chuỗi điểm số trực tiếp từ giao bóng',
-    color: '#10b981'
+    color: '#ff4d4d'
   },
   'veteran': {
     id: 'veteran',
-    name: 'Trụ Cột CLB',
+    name: 'Lão Tướng CLB',
+    description: 'Tham gia hơn 15 trận đấu chính thức',
+    icon: '🛡️',
+    color: '#a855f7'
+  },
+  'ace-server': {
+    id: 'ace-server',
+    name: 'Vua Giao Bóng',
+    description: 'Kỹ năng giao bóng ghi điểm trực tiếp xuất sắc',
+    icon: '⚡',
+    color: '#eab308'
+  },
+  'mvp': {
+    id: 'mvp',
+    name: 'Nhà Vô Địch',
+    description: 'Vô địch giải đấu chính thức CLB Friends',
     icon: '👑',
-    description: 'Thi đấu hơn 15 trận đấu chính thức tại CLB',
-    color: '#8b5cf6'
+    color: '#ccff00'
   }
 };
