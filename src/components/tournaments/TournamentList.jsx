@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClub } from '../../context/ClubContext';
 import { GroupStageView } from './GroupStageView';
 import { SingleEliminationBracket } from './SingleEliminationBracket';
@@ -14,17 +14,20 @@ import {
   CheckCircle2, 
   Sparkles,
   BarChart3,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 
 export function TournamentList() {
   const { 
+    members,
     tournaments, 
     isCreateTournamentOpen, 
     setIsCreateTournamentOpen,
     activeTournamentId,
     setActiveTournamentId,
     deleteTournament,
+    createTournament,
     requireAdmin
   } = useClub();
 
@@ -34,11 +37,64 @@ export function TournamentList() {
 
   const [stageTab, setStageTab] = useState('groups'); // 'groups' | 'knockout' | 'podium'
 
+  // Sync selectedTourneyId when tournaments change or new tournament created
+  useEffect(() => {
+    if (activeTournamentId && tournaments.some(t => t.id === activeTournamentId)) {
+      setSelectedTourneyId(activeTournamentId);
+    } else if (tournaments.length > 0) {
+      if (!selectedTourneyId || !tournaments.some(t => t.id === selectedTourneyId)) {
+        setSelectedTourneyId(tournaments[0].id);
+        setActiveTournamentId(tournaments[0].id);
+      }
+    } else {
+      setSelectedTourneyId('');
+    }
+  }, [activeTournamentId, tournaments]);
+
   const currentTournament = tournaments.find(t => t.id === selectedTourneyId) || tournaments[0];
 
   const handleCreateClick = () => {
     requireAdmin(() => {
       setIsCreateTournamentOpen(true);
+    });
+  };
+
+  /**
+   * 1-Click Quick Sample Tournament Generator for fast setup
+   */
+  const handleQuickCreateSampleTourney = () => {
+    requireAdmin(() => {
+      const sorted = [...members].sort((a, b) => b.elo - a.elo);
+      const quickTeams = [];
+
+      for (let i = 0; i < 8; i++) {
+        const p1 = sorted[(i * 2) % sorted.length];
+        const p2 = sorted[(i * 2 + 1) % sorted.length];
+        const groupCodes = ['A', 'B', 'C', 'D'];
+        quickTeams.push({
+          id: `team-sample-${i + 1}`,
+          name: `${p1.nickname || p1.name.split(' ')[0]} & ${p2.nickname || p2.name.split(' ')[0]}`,
+          playerIds: [p1.id, p2.id],
+          groupCode: groupCodes[Math.floor(i / 2)],
+          avgElo: Math.round((p1.elo + p2.elo) / 2)
+        });
+      }
+
+      const created = createTournament({
+        name: `Giải Đôi Vô Địch CLB Friends 2026`,
+        surface: 'Sân Trung tâm 1 & 2',
+        prizeTrophy: 'Cúp Vàng Vô Địch & Cặp Vợt Selkirk Pro 🏆',
+        description: 'Giải đấu đôi đỉnh cao 4 bảng đấu (A, B, C, D), top 2 mỗi bảng vào Tứ kết loại trực tiếp đến Chung kết Bo3.',
+        date: `Tháng ${new Date().getMonth() + 1}, ${new Date().getFullYear()}`,
+        teams: quickTeams,
+        numGroups: 4
+      });
+
+      if (created) {
+        setActiveTournamentId(created.id);
+        setSelectedTourneyId(created.id);
+        alert(`Đã khởi tạo thành công giải đấu mẫu "${created.name}" gồm 4 bảng (8 đội đôi)!`);
+      }
     });
   };
 
@@ -53,6 +109,10 @@ export function TournamentList() {
         if (tournaments.length > 1) {
           const next = tournaments.find(t => t.id !== currentTournament.id);
           setSelectedTourneyId(next?.id || '');
+          setActiveTournamentId(next?.id || null);
+        } else {
+          setSelectedTourneyId('');
+          setActiveTournamentId(null);
         }
       }
     });
@@ -96,21 +156,75 @@ export function TournamentList() {
           </p>
         </div>
 
-        <button
-          onClick={handleCreateClick}
-          className="btn btn-primary"
-        >
-          <PlusCircle size={18} />
-          <span>Tạo Giải Đấu Mới</span>
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleQuickCreateSampleTourney}
+            className="btn btn-secondary"
+          >
+            <Zap size={16} style={{ color: 'var(--neon-cyan)' }} />
+            <span>Tạo Nhanh 4 Bảng (8 Đôi)</span>
+          </button>
+
+          <button
+            onClick={handleCreateClick}
+            className="btn btn-primary"
+          >
+            <PlusCircle size={18} />
+            <span>Tạo Giải Đấu Tùy Chỉnh</span>
+          </button>
+        </div>
       </div>
 
       {/* Tournament Selector Strip */}
       {tournaments.length === 0 ? (
-        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          <Trophy size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-          <h3>Chưa có giải đấu nào trong hệ thống</h3>
-          <p style={{ marginTop: '0.5rem' }}>Hãy nhấn "Tạo Giải Đấu Mới" để bắt đầu giải đấu đầu tiên của CLB.</p>
+        <div
+          className="glass-card"
+          style={{
+            padding: '3.5rem 2rem',
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%)',
+            border: '1px dashed var(--border-medium)',
+            marginBottom: '2rem'
+          }}
+        >
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(204, 255, 0, 0.1)',
+              color: 'var(--neon-lime)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem auto'
+            }}
+          >
+            <Trophy size={32} />
+          </div>
+          <h3 style={{ fontSize: '1.4rem', marginBottom: '0.5rem' }}>Chưa Có Giải Đấu Nào Được Khởi Tạo</h3>
+          <p style={{ maxWidth: '560px', margin: '0 auto 1.75rem auto', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>
+            Hệ thống đã sẵn sàng với 29 hội viên CLB. Bạn có thể tạo nhanh một giải đấu vô địch 4 bảng hoặc tự do cấu hình từ 1-30 đội và 1-10 bảng đấu.
+          </p>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleQuickCreateSampleTourney}
+              className="btn btn-primary btn-lg"
+              style={{ fontWeight: '700' }}
+            >
+              <Zap size={18} />
+              <span>Khởi Tạo Nhanh Giải Mẫu 4 Bảng (8 Đôi)</span>
+            </button>
+
+            <button
+              onClick={handleCreateClick}
+              className="btn btn-secondary btn-lg"
+            >
+              <PlusCircle size={18} />
+              <span>Tạo & Ghép Bảng Thủ Công</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div

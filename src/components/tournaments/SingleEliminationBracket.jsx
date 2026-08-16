@@ -41,7 +41,7 @@ export function SingleEliminationBracket({ tournament }) {
   };
 
   const handleSaveScore = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!requireAdmin()) return;
     if (!selectedMatch) return;
 
@@ -261,7 +261,11 @@ export function SingleEliminationBracket({ tournament }) {
               <button type="button" onClick={() => setSelectedMatch(null)} className="btn btn-secondary">
                 Hủy Bỏ
               </button>
-              <button type="submit" form="bracket-score-form" className="btn btn-primary">
+              <button
+                type="button"
+                onClick={handleSaveScore}
+                className="btn btn-primary"
+              >
                 Lưu & Đưa Đội Thắng Vào Vòng Sau
               </button>
             </>

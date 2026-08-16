@@ -11,17 +11,18 @@ import {
   Sparkles, 
   Layers, 
   Settings2,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 
 export function CreateTournamentModal({ isOpen, onClose }) {
-  const { members, createTournament, requireAdmin } = useClub();
+  const { members, createTournament, requireAdmin, setActiveTournamentId } = useClub();
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState('Giải Đôi Vô Địch CLB Friends 2026');
   const [numTeams, setNumTeams] = useState(8);
   const [numDivisions, setNumDivisions] = useState(4);
   const [surface, setSurface] = useState('Sân Trung tâm 1 & 2');
-  const [prizeTrophy, setPrizeTrophy] = useState('Cúp Vàng & Vợt Selkirk Pro 🏆');
+  const [prizeTrophy, setPrizeTrophy] = useState('Cúp Vàng & Cặp Vợt Selkirk Pro 🏆');
   const [description, setDescription] = useState('Giải đấu đôi chính thức CLB Friends: Vòng bảng tính điểm ➔ Tứ kết ➔ Bán kết ➔ Chung kết Bo3.');
 
   const [teamsList, setTeamsList] = useState([]);
@@ -30,17 +31,25 @@ export function CreateTournamentModal({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return;
 
-    const availableMembers = [...members];
+    if (!name) {
+      setName(`Giải Đôi Vô Địch CLB Friends - Mùa ${new Date().getMonth() + 1}/${new Date().getFullYear()}`);
+    }
+
+    const availableMembers = members && members.length >= 2 ? [...members] : [
+      { id: 'p-1', name: 'Phạm Linh', nickname: 'Linh', elo: 1260 },
+      { id: 'p-2', name: 'Tuấn Anh', nickname: 'Tuấn Anh', elo: 1260 }
+    ];
+
     const initialTeams = [];
 
     for (let i = 0; i < numTeams; i++) {
       const p1Index = (i * 2) % availableMembers.length;
       const p2Index = (i * 2 + 1) % availableMembers.length;
-      const p1 = availableMembers[p1Index] || members[0];
-      const p2 = availableMembers[p2Index] || members[1];
+      const p1 = availableMembers[p1Index] || availableMembers[0];
+      const p2 = availableMembers[p2Index] || availableMembers[1];
 
       const assignedGroupCode = DIVISION_LETTERS[i % Math.min(numDivisions, 10)];
-      const avgElo = Math.round((p1.elo + p2.elo) / 2);
+      const avgElo = Math.round(((p1.elo || 1150) + (p2.elo || 1150)) / 2);
 
       initialTeams.push({
         id: `team-custom-${i + 1}`,
@@ -176,32 +185,40 @@ export function CreateTournamentModal({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (!requireAdmin()) return;
 
-    if (!name.trim()) {
-      alert('Vui lòng nhập tên giải đấu.');
-      return;
-    }
+    requireAdmin(() => {
+      const tourneyName = name.trim() || `Giải Đôi CLB Friends - Mùa ${new Date().getMonth() + 1}/${new Date().getFullYear()}`;
 
-    const formattedTeams = teamsList.map(t => ({
-      id: t.id,
-      name: t.name,
-      playerIds: [t.player1Id, t.player2Id],
-      groupCode: t.groupCode,
-      avgElo: t.avgElo
-    }));
+      if (teamsList.length < 2) {
+        alert('Cần tối thiểu 2 đội để tạo giải đấu.');
+        return;
+      }
 
-    createTournament({
-      name: name.trim(),
-      surface: surface.trim(),
-      prizeTrophy: prizeTrophy.trim(),
-      description: description.trim(),
-      date: `Tháng ${new Date().getMonth() + 1}, ${new Date().getFullYear()}`,
-      teams: formattedTeams,
-      numGroups: Number(numDivisions)
+      const formattedTeams = teamsList.map(t => ({
+        id: t.id,
+        name: t.name,
+        playerIds: [t.player1Id, t.player2Id],
+        groupCode: t.groupCode,
+        avgElo: t.avgElo
+      }));
+
+      const created = createTournament({
+        name: tourneyName,
+        surface: surface.trim() || 'Sân Trung tâm 1 & 2',
+        prizeTrophy: prizeTrophy.trim() || 'Cúp Vàng & Vợt Selkirk Pro 🏆',
+        description: description.trim() || 'Giải đấu đôi chính thức CLB Friends',
+        date: `Tháng ${new Date().getMonth() + 1}, ${new Date().getFullYear()}`,
+        teams: formattedTeams,
+        numGroups: Number(numDivisions)
+      });
+
+      if (created) {
+        setActiveTournamentId(created.id);
+        alert(`Đã khởi tạo thành công giải đấu "${created.name}" với ${formattedTeams.length} đôi và ${numDivisions} bảng đấu!`);
+      }
+
+      onClose();
     });
-
-    onClose();
   };
 
   return (
@@ -211,20 +228,26 @@ export function CreateTournamentModal({ isOpen, onClose }) {
       title="Tạo Giải Đấu & Xếp Bảng Thủ Công (1-30 Đội, 1-10 Bảng)"
       size="xl"
       footer={
-        <>
-          <button type="button" onClick={onClose} className="btn btn-secondary">
-            Hủy Bỏ
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="btn btn-primary"
-            style={{ fontWeight: '700' }}
-          >
-            <Swords size={18} />
-            <span>Khởi Tạo Toàn Bộ Giải Đấu</span>
-          </button>
-        </>
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Tổng cộng: <strong style={{ color: 'var(--neon-lime)' }}>{teamsList.length} Đôi</strong> chia vào <strong style={{ color: 'var(--neon-cyan)' }}>{numDivisions} Bảng</strong>
+          </span>
+
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button type="button" onClick={onClose} className="btn btn-secondary">
+              Hủy Bỏ
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="btn btn-primary"
+              style={{ fontWeight: '700' }}
+            >
+              <Swords size={18} />
+              <span>Khởi Tạo Toàn Bộ Giải Đấu</span>
+            </button>
+          </div>
+        </div>
       }
     >
       <form id="create-custom-tourney-form" onSubmit={handleSubmit}>
@@ -252,7 +275,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
                 type="text"
                 required
                 className="form-control"
-                placeholder="VD: Giải Đôi Vô Địch Mùa Thu Friends Cup 2026"
+                placeholder="VD: Giải Đôi Vô Địch CLB Friends 2026"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -261,7 +284,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
             {/* Select Number of Teams (1-30) */}
             <div className="form-group">
               <label className="form-label">
-                Số lượng đội tham gia: <strong style={{ color: 'var(--neon-lime)' }}>{numTeams} Đôi</strong> (1 đến 30)
+                Số lượng đội tham gia: <strong style={{ color: 'var(--neon-lime)' }}>{numTeams} Đôi</strong> (2 đến 30)
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <input
@@ -287,7 +310,7 @@ export function CreateTournamentModal({ isOpen, onClose }) {
             {/* Select Number of Divisions (1-10) */}
             <div className="form-group">
               <label className="form-label">
-                Số lượng bảng đấu / phân hạng: <strong style={{ color: 'var(--neon-cyan)' }}>{numDivisions} Bảng</strong> (1 đến 10)
+                Số lượng bảng đấu: <strong style={{ color: 'var(--neon-cyan)' }}>{numDivisions} Bảng</strong> (1 đến 10)
               </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <input

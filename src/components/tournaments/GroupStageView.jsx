@@ -35,7 +35,7 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
   };
 
   const handleSaveScore = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!requireAdmin()) return;
     if (!selectedMatch) return;
 
@@ -417,7 +417,11 @@ export function GroupStageView({ tournament, onNavigateToKnockout }) {
               <button type="button" onClick={() => setSelectedMatch(null)} className="btn btn-secondary">
                 Hủy Bỏ
               </button>
-              <button type="submit" form="group-score-form-view" className="btn btn-primary">
+              <button
+                type="button"
+                onClick={handleSaveScore}
+                className="btn btn-primary"
+              >
                 Lưu & Cập Nhật Điểm Bảng
               </button>
             </>
