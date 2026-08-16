@@ -588,6 +588,30 @@ export function ClubProvider({ children }) {
   };
 
   /**
+   * Import backup JSON data
+   */
+  const importBackupData = (backupJson) => {
+    try {
+      const data = typeof backupJson === 'string' ? JSON.parse(backupJson) : backupJson;
+      if (data.members && Array.isArray(data.members)) {
+        setMembers(data.members);
+      }
+      if (data.matches && Array.isArray(data.matches)) {
+        setMatches(data.matches);
+      }
+      if (data.tournaments && Array.isArray(data.tournaments)) {
+        setTournaments(data.tournaments);
+        if (data.tournaments.length > 0) {
+          setActiveTournamentId(data.tournaments[0].id);
+        }
+      }
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  };
+
+  /**
    * Reset data to initial 29 members with 0 match stats and initial tournament
    */
   const resetToDefaultData = () => {
@@ -635,6 +659,7 @@ export function ClubProvider({ children }) {
         updateTournamentMatchScore,
         deleteTournament,
         createTournament,
+        importBackupData,
         addMember,
         updateMember,
         deleteMember,
