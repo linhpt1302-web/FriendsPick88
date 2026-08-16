@@ -10,7 +10,7 @@ export function AuthModal({ isOpen, onClose }) {
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setErrorMessage('');
 
     if (!password.trim()) {
@@ -18,7 +18,7 @@ export function AuthModal({ isOpen, onClose }) {
       return;
     }
 
-    const res = login('admin', password);
+    const res = login('admin', password.trim());
     if (res.success) {
       setPassword('');
       onClose();
@@ -38,7 +38,12 @@ export function AuthModal({ isOpen, onClose }) {
           <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">
             Hủy Bỏ
           </button>
-          <button type="submit" form="admin-auth-modal-form" className="btn btn-primary btn-sm" style={{ fontSize: '0.76rem', textTransform: 'uppercase', fontWeight: '700' }}>
+          <button 
+            type="button" 
+            onClick={handleSubmit} 
+            className="btn btn-primary btn-sm" 
+            style={{ fontSize: '0.76rem', textTransform: 'uppercase', fontWeight: '700' }}
+          >
             <Lock size={14} />
             <span>Xác Nhận Đăng Nhập</span>
           </button>

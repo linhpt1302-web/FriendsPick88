@@ -24,20 +24,16 @@ export function ClubProvider({ children }) {
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingAdminAction, setPendingAdminAction] = useState(null);
 
-  // Initialize members: 29 members with 0 match stats
+  // Initialize members: 29 members with clean state
   const [members, setMembers] = useState(() => {
     try {
       const saved = localStorage.getItem('fpc_members');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Check if data is already clean 29 members
         if (Array.isArray(parsed) && parsed.length === INITIAL_MEMBERS.length) {
-          // Sync avatars and ensure 0 matches if we're resetting
-          const hasOldMatches = parsed.some(m => m.matchesPlayed > 0);
-          if (!hasOldMatches) {
-            return parsed;
-          }
+          return parsed;
         }
       }
       return INITIAL_MEMBERS;
@@ -51,9 +47,8 @@ export function ClubProvider({ children }) {
       const saved = localStorage.getItem('fpc_matches');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Clear match history as requested
-          localStorage.removeItem('fpc_matches');
+        if (Array.isArray(parsed)) {
+          return parsed;
         }
       }
       return INITIAL_MATCHES;
@@ -84,7 +79,7 @@ export function ClubProvider({ children }) {
   const [isCreateTournamentOpen, setIsCreateTournamentOpen] = useState(false);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
   const [isHeadToHeadOpen, setIsHeadToHeadOpen] = useState(false);
-  const [activeTournamentId, setActiveTournamentId] = useState(null);
+  const [activeTournamentId, setActiveTournamentId] = useState(INITIAL_TOURNAMENTS[0]?.id || null);
 
   // Sync to localStorage
   useEffect(() => {
@@ -124,11 +119,23 @@ export function ClubProvider({ children }) {
         } catch (e) {
           console.error(e);
         }
+        setIsAuthModalOpen(false);
+
+        // Run any pending action that requested admin auth
+        if (pendingAdminAction && typeof pendingAdminAction === 'function') {
+          try {
+            pendingAdminAction();
+          } catch (err) {
+            console.error('Error running pending admin action', err);
+          }
+          setPendingAdminAction(null);
+        }
+
         return { success: true };
       } else {
-        return { success: false, message: 'Mật khẩu quản trị viên không chính xác!' };
+        return { success: false, message: 'Mật khẩu quản trị viên không chính xác.' };
       }
-    } else if (role === 'guest') {
+    } else {
       const userObj = { role: 'guest', name: 'Khách xem' };
       setCurrentUser(userObj);
       try {
@@ -136,14 +143,11 @@ export function ClubProvider({ children }) {
       } catch (e) {
         console.error(e);
       }
+      setIsAuthModalOpen(false);
       return { success: true };
     }
-    return { success: false, message: 'Vai trò không hợp lệ' };
   };
 
-  /**
-   * Logout handler - clears session and locks website back to LoginGate
-   */
   const logout = () => {
     setCurrentUser(null);
     try {
@@ -158,6 +162,9 @@ export function ClubProvider({ children }) {
       if (typeof actionCallback === 'function') actionCallback();
       return true;
     } else {
+      if (typeof actionCallback === 'function') {
+        setPendingAdminAction(() => actionCallback);
+      }
       setIsAuthModalOpen(true);
       return false;
     }
@@ -312,8 +319,6 @@ export function ClubProvider({ children }) {
    * Log a new doubles match directly
    */
   const logMatch = (matchInput) => {
-    if (!requireAdmin()) return null;
-
     const {
       type,
       teamA,
@@ -343,8 +348,6 @@ export function ClubProvider({ children }) {
    * Update a tournament match score
    */
   const updateTournamentMatchScore = (tournamentId, matchId, scoreA, scoreB, sets = []) => {
-    if (!requireAdmin()) return;
-
     setTournaments(prev => {
       return prev.map(t => {
         if (t.id !== tournamentId) return t;
@@ -460,8 +463,6 @@ export function ClubProvider({ children }) {
    * Delete a tournament and roll back Elo ratings
    */
   const deleteTournament = (tournamentId) => {
-    if (!requireAdmin()) return false;
-
     const tourneyToDelete = tournaments.find(t => t.id === tournamentId);
     if (!tourneyToDelete) return false;
 
@@ -486,8 +487,6 @@ export function ClubProvider({ children }) {
    * Add a new member to the roster with status support
    */
   const addMember = (memberData) => {
-    if (!requireAdmin()) return null;
-
     const newId = `p-${Date.now()}`;
     const initialElo = Number(memberData.elo) || 1150;
     const newMember = {
@@ -520,8 +519,6 @@ export function ClubProvider({ children }) {
    * Update an existing member's information and status
    */
   const updateMember = (memberId, updatedData) => {
-    if (!requireAdmin()) return false;
-
     setMembers(prev => {
       return prev.map(m => {
         if (m.id !== memberId) return m;
@@ -551,8 +548,6 @@ export function ClubProvider({ children }) {
    * Delete a member from the club roster
    */
   const deleteMember = (memberId) => {
-    if (!requireAdmin()) return false;
-
     setMembers(prev => prev.filter(m => m.id !== memberId));
 
     if (selectedPlayer && selectedPlayer.id === memberId) {
@@ -565,11 +560,9 @@ export function ClubProvider({ children }) {
    * Create a championship tournament
    */
   const createTournament = (tourneyData) => {
-    if (!requireAdmin()) return null;
-
     const newTournament = createChampionshipTournament({
       name: tourneyData.name,
-      date: tourneyData.date || 'Tháng 8, 2026',
+      date: tourneyData.date || `Tháng ${new Date().getMonth() + 1}, ${new Date().getFullYear()}`,
       surface: tourneyData.surface || 'Sân Trung tâm 1 & 2',
       prizeTrophy: tourneyData.prizeTrophy || 'Cúp Vàng & Vợt Selkirk Pro 🏆',
       description: tourneyData.description || 'Giải đấu đôi chính thức CLB Friends',
@@ -584,17 +577,16 @@ export function ClubProvider({ children }) {
   };
 
   /**
-   * Reset data to initial 29 members with 0 match stats
+   * Reset data to initial 29 members with 0 match stats and initial tournament
    */
   const resetToDefaultData = () => {
-    if (!requireAdmin()) return;
-
     localStorage.removeItem('fpc_members');
     localStorage.removeItem('fpc_matches');
     localStorage.removeItem('fpc_tournaments');
     setMembers(INITIAL_MEMBERS);
     setMatches(INITIAL_MATCHES);
     setTournaments(INITIAL_TOURNAMENTS);
+    setActiveTournamentId(INITIAL_TOURNAMENTS[0]?.id || null);
   };
 
   return (
@@ -607,8 +599,11 @@ export function ClubProvider({ children }) {
         isAuthModalOpen,
         setIsAuthModalOpen,
         members,
+        setMembers,
         matches,
+        setMatches,
         tournaments,
+        setTournaments,
         activeTab,
         setActiveTab,
         selectedPlayer,
@@ -628,6 +623,7 @@ export function ClubProvider({ children }) {
         logMatch,
         updateTournamentMatchScore,
         deleteTournament,
+        createTournament,
         addMember,
         updateMember,
         deleteMember,
